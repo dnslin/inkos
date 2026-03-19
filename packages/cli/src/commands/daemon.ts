@@ -12,12 +12,13 @@ export const upCommand = new Command("up")
   .option("-q, --quiet", "Suppress console output")
   .action(async (opts) => {
     let logStream: WriteStream | undefined;
+    let pidPath: string | undefined;
     try {
       const config = await loadConfig();
       const root = findProjectRoot();
 
       // Check if already running
-      const pidPath = join(root, PID_FILE);
+      pidPath = join(root, PID_FILE);
       try {
         const existingPid = await readFile(pidPath, "utf-8");
         logError(`Daemon already running (PID: ${existingPid.trim()}). Run 'inkos down' first.`);
@@ -62,10 +63,13 @@ export const upCommand = new Command("up")
         log("\nShutting down daemon...");
         scheduler.stop();
         logStream?.end();
-        try {
-          await unlink(pidPath);
-        } catch {
-          // ignore
+        const currentPidPath = pidPath;
+        if (currentPidPath !== undefined) {
+          try {
+            await unlink(currentPidPath);
+          } catch {
+            // ignore
+          }
         }
         process.exit(0);
       };
@@ -80,6 +84,13 @@ export const upCommand = new Command("up")
       await new Promise(() => {});
     } catch (e) {
       logStream?.end();
+      if (pidPath !== undefined) {
+        try {
+          await unlink(pidPath);
+        } catch {
+          // ignore
+        }
+      }
       logError(`Failed to start daemon: ${e}`);
       process.exit(1);
     }
