@@ -77,6 +77,8 @@ export class WriterAgent extends BaseAgent {
       ]);
 
     const recentChapters = await this.loadRecentChapters(bookDir, chapterNumber);
+    // Load more chapters for dialogue fingerprint extraction (voice consistency over longer span)
+    const fingerprintChapters = await this.loadRecentChapters(bookDir, chapterNumber, 5);
 
     // Load genre profile + book rules
     const { profile: genreProfile, body: genreBody } =
@@ -87,7 +89,7 @@ export class WriterAgent extends BaseAgent {
 
     const styleFingerprint = this.buildStyleFingerprint(styleProfileRaw);
 
-    const dialogueFingerprints = this.extractDialogueFingerprints(recentChapters, storyBible);
+    const dialogueFingerprints = this.extractDialogueFingerprints(fingerprintChapters, storyBible);
     const relevantSummaries = this.findRelevantSummaries(chapterSummaries, volumeOutline, chapterNumber);
 
     const hasParentCanon = parentCanon !== "(文件尚未创建)";
@@ -453,6 +455,7 @@ ${params.volumeOutline}
   private async loadRecentChapters(
     bookDir: string,
     currentChapter: number,
+    count = 1,
   ): Promise<string> {
     const chaptersDir = join(bookDir, "chapters");
     try {
@@ -460,7 +463,7 @@ ${params.volumeOutline}
       const mdFiles = files
         .filter((f) => f.endsWith(".md") && !f.startsWith("index"))
         .sort()
-        .slice(-1);
+        .slice(-count);
 
       if (mdFiles.length === 0) return "";
 
@@ -560,9 +563,10 @@ ${params.volumeOutline}
   private extractDialogueFingerprints(recentChapters: string, _storyBible: string): string {
     if (!recentChapters) return "";
 
-    // Match dialogue patterns: "speaker said" or dialogue in quotes
-    // Chinese dialogue typically uses "" or 「」
-    const dialogueRegex = /(?:(.{1,6})(?:说道|道|喝道|冷声道|笑道|怒道|低声道|大声道|喝骂道|冷笑道|沉声道|喊道|叫道|问道|答道)\s*[：:]\s*["""「]([^"""」]+)["""」])|["""「]([^"""」]{2,})["""」]/g;
+    // Match dialogue patterns:
+    // Chinese: "speaker说道：" or dialogue in ""「」
+    // English: "dialogue," speaker said. or "dialogue."
+    const dialogueRegex = /(?:(.{1,6})(?:说道|道|喝道|冷声道|笑道|怒道|低声道|大声道|喝骂道|冷笑道|沉声道|喊道|叫道|问道|答道)\s*[：:]\s*["""「]([^"""」]+)["""」])|["""「]([^"""」]{2,})["""」]|"([^"]{2,})"/g;
 
     const characterDialogues = new Map<string, string[]>();
     let match: RegExpExecArray | null;
