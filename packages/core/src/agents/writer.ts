@@ -10,6 +10,7 @@ import { readGenreProfile, readBookRules } from "./rules-reader.js";
 import { validatePostWrite, type PostWriteViolation } from "./post-write-validator.js";
 import { analyzeAITells } from "./ai-tells.js";
 import { filterHooks, filterSummaries, filterSubplots, filterEmotionalArcs, filterCharacterMatrix } from "../utils/context-filter.js";
+import { extractPOVFromOutline, filterMatrixByPOV, filterHooksByPOV } from "../utils/pov-filter.js";
 import { parseCreativeOutput } from "./writer-parser.js";
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -118,20 +119,29 @@ export class WriterAgent extends BaseAgent {
     const filteredArcs = filterEmotionalArcs(emotionalArcs, chapterNumber);
     const filteredMatrix = filterCharacterMatrix(characterMatrix, volumeOutline, bookRules?.protagonist?.name);
 
+    // POV-aware filtering: limit context to what the POV character knows
+    const povCharacter = extractPOVFromOutline(volumeOutline, chapterNumber);
+    const povFilteredMatrix = povCharacter
+      ? filterMatrixByPOV(filteredMatrix, povCharacter)
+      : filteredMatrix;
+    const povFilteredHooks = povCharacter
+      ? filterHooksByPOV(filteredHooks, povCharacter, chapterSummaries)
+      : filteredHooks;
+
     const creativeUserPrompt = this.buildUserPrompt({
       chapterNumber,
       storyBible,
       volumeOutline,
       currentState,
       ledger: genreProfile.numericalSystem ? ledger : "",
-      hooks: filteredHooks,
+      hooks: povFilteredHooks,
       recentChapters,
       wordCount: input.wordCountOverride ?? book.chapterWordCount,
       externalContext: input.externalContext,
       chapterSummaries: filteredSummaries,
       subplotBoard: filteredSubplots,
       emotionalArcs: filteredArcs,
-      characterMatrix: filteredMatrix,
+      characterMatrix: povFilteredMatrix,
       dialogueFingerprints,
       relevantSummaries,
       parentCanon: hasParentCanon ? parentCanon : undefined,
