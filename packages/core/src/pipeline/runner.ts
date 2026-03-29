@@ -3,6 +3,7 @@ import { chatCompletion, createLLMClient } from "../llm/provider.js";
 import type { Logger } from "../utils/logger.js";
 import type { BookConfig, FanficMode } from "../models/book.js";
 import type { ChapterMeta } from "../models/chapter.js";
+import type { InteractiveBranchTree } from "../models/interactive-fiction.js";
 import type { NotifyChannel, LLMConfig, AgentLLMOverride, InputGovernanceMode } from "../models/project.js";
 import type { GenreProfile } from "../models/genre-profile.js";
 import { ArchitectAgent } from "../agents/architect.js";
@@ -124,6 +125,20 @@ export interface BookStatusInfo {
   readonly totalWords: number;
   readonly nextChapter: number;
   readonly chapters: ReadonlyArray<ChapterMeta>;
+}
+
+export interface InteractiveBranchChoicesResult {
+  readonly bookId: string;
+  readonly activeNodeId: string;
+  readonly activeNodeStatus: string;
+  readonly choices: ReadonlyArray<InteractiveBranchTree["choices"][number]>;
+}
+
+export interface InteractiveBranchActivationResult {
+  readonly bookId: string;
+  readonly activeNodeId: string;
+  readonly restoredChapter: number;
+  readonly selectedChoiceId?: string;
 }
 
 export interface ImportChaptersInput {
@@ -933,6 +948,63 @@ export class PipelineRunner {
       nextChapter,
       chapters: [...chapters],
     };
+  }
+
+  async getInteractiveBranchTree(bookId: string): Promise<InteractiveBranchTree> {
+    await this.assertInteractiveBook(bookId);
+    const tree = await this.state.loadBranchTree(bookId);
+    if (!tree) {
+      throw new Error(`Interactive branch tree is missing for "${bookId}".`);
+    }
+    return tree;
+  }
+
+  async listInteractiveChoices(bookId: string): Promise<InteractiveBranchChoicesResult> {
+    const tree = await this.getInteractiveBranchTree(bookId);
+    const activeNode = tree.nodes.find((node) => node.nodeId === tree.activeNodeId);
+    if (!activeNode) {
+      throw new Error(`Interactive branch tree is missing active node "${tree.activeNodeId}".`);
+    }
+
+    return {
+      bookId,
+      activeNodeId: activeNode.nodeId,
+      activeNodeStatus: activeNode.status,
+      choices: tree.choices.filter((choice) => choice.fromNodeId === activeNode.nodeId),
+    };
+  }
+
+  async chooseInteractiveBranch(bookId: string, choiceId: string): Promise<InteractiveBranchActivationResult> {
+    const releaseLock = await this.state.acquireBookLock(bookId);
+    try {
+      const tree = await this.getInteractiveBranchTree(bookId);
+      const activeNode = tree.nodes.find((node) => node.nodeId === tree.activeNodeId);
+      if (!activeNode) {
+        throw new Error(`Interactive branch tree is missing active node "${tree.activeNodeId}".`);
+      }
+      if (activeNode.status !== "awaiting-choice") {
+        throw new Error(`Branch ${activeNode.nodeId} is not waiting for a choice.`);
+      }
+
+      const choice = tree.choices.find((candidate) => candidate.choiceId === choiceId);
+      if (!choice || choice.fromNodeId !== activeNode.nodeId) {
+        throw new Error(`Choice "${choiceId}" is not available on the active branch.`);
+      }
+
+      return this.activateInteractiveBranch(bookId, tree, choice.toNodeId, choice.choiceId);
+    } finally {
+      await releaseLock();
+    }
+  }
+
+  async switchInteractiveBranch(bookId: string, nodeId: string): Promise<InteractiveBranchActivationResult> {
+    const releaseLock = await this.state.acquireBookLock(bookId);
+    try {
+      const tree = await this.getInteractiveBranchTree(bookId);
+      return this.activateInteractiveBranch(bookId, tree, nodeId);
+    } finally {
+      await releaseLock();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1866,6 +1938,13 @@ ${matrix}`,
     return `ch-${String(chapterNumber).padStart(4, "0")}`;
   }
 
+  private async assertInteractiveBook(bookId: string): Promise<void> {
+    const book = await this.state.loadBookConfig(bookId);
+    if (book.narrativeMode !== "interactive-tree") {
+      throw new Error(`Book "${bookId}" is not an interactive-tree book.`);
+    }
+  }
+
   private async assertInteractiveChoiceSelected(bookId: string, book: Pick<BookConfig, "narrativeMode">): Promise<void> {
     if (book.narrativeMode !== "interactive-tree") {
       return;
@@ -1880,6 +1959,88 @@ ${matrix}`,
       `Interactive branch ${pending.activeNodeId} is waiting for a choice. ` +
       `Choose a branch before continuing writing.`,
     );
+  }
+
+  private async activateInteractiveBranch(
+    bookId: string,
+    branchTree: InteractiveBranchTree,
+    targetNodeId: string,
+    selectedChoiceId?: string,
+  ): Promise<InteractiveBranchActivationResult> {
+    const targetNode = branchTree.nodes.find((node) => node.nodeId === targetNodeId);
+    if (!targetNode) {
+      throw new Error(`Interactive branch "${targetNodeId}" not found.`);
+    }
+
+    const restored = await this.state.restoreState(bookId, targetNode.snapshotRef.chapterNumber);
+    if (!restored) {
+      throw new Error(
+        `Failed to restore snapshot ${targetNode.snapshotRef.chapterNumber} for branch "${targetNodeId}".`,
+      );
+    }
+
+    const currentActiveNode = branchTree.nodes.find((node) => node.nodeId === branchTree.activeNodeId) ?? null;
+    const inboundChoice = selectedChoiceId
+      ? branchTree.choices.find((choice) => choice.choiceId === selectedChoiceId)
+      : branchTree.choices.find((choice) => choice.toNodeId === targetNodeId);
+    const shouldResolveParentChoice = Boolean(
+      inboundChoice
+      && currentActiveNode
+      && currentActiveNode.nodeId === inboundChoice.fromNodeId
+      && currentActiveNode.status === "awaiting-choice",
+    );
+
+    const updatedNodes = branchTree.nodes.map((node) => {
+      if (node.nodeId === targetNodeId) {
+        return {
+          ...node,
+          status: "active" as const,
+        };
+      }
+
+      if (shouldResolveParentChoice && inboundChoice && node.nodeId === inboundChoice.fromNodeId) {
+        return {
+          ...node,
+          status: "completed" as const,
+          selectedChoiceId: inboundChoice.choiceId,
+        };
+      }
+
+      if (currentActiveNode && node.nodeId === currentActiveNode.nodeId && node.nodeId !== targetNodeId) {
+        if (currentActiveNode.status === "active") {
+          return {
+            ...node,
+            status: currentActiveNode.selectedChoiceId ? "completed" as const : "dormant" as const,
+          };
+        }
+      }
+
+      return node;
+    });
+
+    const updatedChoices = branchTree.choices.map((choice) => {
+      if (shouldResolveParentChoice && inboundChoice && choice.fromNodeId === inboundChoice.fromNodeId) {
+        return {
+          ...choice,
+          selected: choice.choiceId === inboundChoice.choiceId,
+        };
+      }
+      return choice;
+    });
+
+    await this.state.saveBranchTree(bookId, {
+      ...branchTree,
+      activeNodeId: targetNodeId,
+      nodes: updatedNodes,
+      choices: updatedChoices,
+    });
+
+    return {
+      bookId,
+      activeNodeId: targetNodeId,
+      restoredChapter: targetNode.snapshotRef.chapterNumber,
+      ...(inboundChoice?.choiceId ? { selectedChoiceId: inboundChoice.choiceId } : {}),
+    };
   }
 
   private async buildPersistenceOutput(

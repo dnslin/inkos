@@ -265,6 +265,217 @@ describe("CLI integration", () => {
     });
   });
 
+  describe("inkos branch", () => {
+    it("lists branch tree and pending choices for an interactive book", async () => {
+      const state = new StateManager(projectDir);
+      const bookId = "interactive-cli";
+      const bookDir = state.bookDir(bookId);
+      const storyDir = join(bookDir, "story");
+      await mkdir(join(bookDir, "chapters"), { recursive: true });
+      await mkdir(storyDir, { recursive: true });
+
+      await writeFile(
+        join(bookDir, "book.json"),
+        JSON.stringify({
+          id: bookId,
+          title: "Interactive CLI Book",
+          platform: "other",
+          genre: "other",
+          status: "active",
+          targetChapters: 10,
+          chapterWordCount: 2200,
+          narrativeMode: "interactive-tree",
+          createdAt: "2026-03-30T00:00:00.000Z",
+          updatedAt: "2026-03-30T00:00:00.000Z",
+        }, null, 2),
+        "utf-8",
+      );
+      await writeFile(join(bookDir, "chapters", "index.json"), "[]", "utf-8");
+      await state.saveBranchTree(bookId, {
+        version: 1,
+        rootNodeId: "root",
+        activeNodeId: "root",
+        nodes: [
+          {
+            nodeId: "root",
+            parentNodeId: null,
+            sourceChapterId: null,
+            sourceChapterNumber: 0,
+            branchDepth: 0,
+            branchLabel: "Main Route",
+            status: "awaiting-choice",
+            snapshotRef: { chapterNumber: 1 },
+            selectedChoiceId: null,
+            chapterIds: ["ch-0001"],
+            displayPath: "main",
+          },
+          {
+            nodeId: "node-a",
+            parentNodeId: "root",
+            sourceChapterId: "ch-0001",
+            sourceChapterNumber: 1,
+            branchDepth: 1,
+            branchLabel: "接受交易",
+            status: "dormant",
+            snapshotRef: { chapterNumber: 1 },
+            selectedChoiceId: null,
+            chapterIds: [],
+            displayPath: "main.a",
+          },
+        ],
+        choices: [
+          {
+            choiceId: "choice-root-a",
+            fromNodeId: "root",
+            toNodeId: "node-a",
+            label: "接受交易",
+            intent: "接受看守的交易。",
+            immediateGoal: "今晚进入档案室。",
+            expectedCost: "欠下一笔人情。",
+            expectedRisk: "会被持续监视。",
+            hookPressure: "看守线推进。",
+            characterPressure: "同伴信任下降。",
+            tone: "紧张",
+            selected: false,
+          },
+        ],
+      });
+
+      const treeOutput = run(["branch", "tree", bookId]);
+      expect(treeOutput).toContain("Main Route");
+      expect(treeOutput).toContain("node-a");
+
+      const choicesOutput = run(["branch", "choices", bookId, "--json"]);
+      const choices = JSON.parse(choicesOutput);
+      expect(choices.activeNodeId).toBe("root");
+      expect(choices.choices).toHaveLength(1);
+      expect(choices.choices[0].choiceId).toBe("choice-root-a");
+    });
+
+    it("chooses and switches interactive branches", async () => {
+      const state = new StateManager(projectDir);
+      const bookId = "interactive-switch";
+      const bookDir = state.bookDir(bookId);
+      const storyDir = join(bookDir, "story");
+      await mkdir(join(bookDir, "chapters"), { recursive: true });
+      await mkdir(storyDir, { recursive: true });
+      await mkdir(join(storyDir, "snapshots", "1"), { recursive: true });
+      await mkdir(join(storyDir, "snapshots", "2"), { recursive: true });
+
+      await writeFile(
+        join(bookDir, "book.json"),
+        JSON.stringify({
+          id: bookId,
+          title: "Interactive Switch Book",
+          platform: "other",
+          genre: "other",
+          status: "active",
+          targetChapters: 10,
+          chapterWordCount: 2200,
+          narrativeMode: "interactive-tree",
+          createdAt: "2026-03-30T00:00:00.000Z",
+          updatedAt: "2026-03-30T00:00:00.000Z",
+        }, null, 2),
+        "utf-8",
+      );
+      await writeFile(join(bookDir, "chapters", "index.json"), "[]", "utf-8");
+      await Promise.all([
+        writeFile(join(storyDir, "snapshots", "1", "current_state.md"), "# Current State\n\n- Root snapshot.\n", "utf-8"),
+        writeFile(join(storyDir, "snapshots", "1", "pending_hooks.md"), "# Pending Hooks\n\n- Root hook.\n", "utf-8"),
+        writeFile(join(storyDir, "snapshots", "2", "current_state.md"), "# Current State\n\n- Route A snapshot.\n", "utf-8"),
+        writeFile(join(storyDir, "snapshots", "2", "pending_hooks.md"), "# Pending Hooks\n\n- Route A hook.\n", "utf-8"),
+      ]);
+      await state.saveBranchTree(bookId, {
+        version: 1,
+        rootNodeId: "root",
+        activeNodeId: "root",
+        nodes: [
+          {
+            nodeId: "root",
+            parentNodeId: null,
+            sourceChapterId: null,
+            sourceChapterNumber: 0,
+            branchDepth: 0,
+            branchLabel: "Main Route",
+            status: "awaiting-choice",
+            snapshotRef: { chapterNumber: 1 },
+            selectedChoiceId: null,
+            chapterIds: ["ch-0001"],
+            displayPath: "main",
+          },
+          {
+            nodeId: "node-a",
+            parentNodeId: "root",
+            sourceChapterId: "ch-0001",
+            sourceChapterNumber: 1,
+            branchDepth: 1,
+            branchLabel: "A Route",
+            status: "dormant",
+            snapshotRef: { chapterNumber: 2 },
+            selectedChoiceId: null,
+            chapterIds: ["ch-0002"],
+            displayPath: "main.a",
+          },
+          {
+            nodeId: "node-b",
+            parentNodeId: "root",
+            sourceChapterId: "ch-0001",
+            sourceChapterNumber: 1,
+            branchDepth: 1,
+            branchLabel: "B Route",
+            status: "dormant",
+            snapshotRef: { chapterNumber: 1 },
+            selectedChoiceId: null,
+            chapterIds: [],
+            displayPath: "main.b",
+          },
+        ],
+        choices: [
+          {
+            choiceId: "choice-root-a",
+            fromNodeId: "root",
+            toNodeId: "node-a",
+            label: "A Route",
+            intent: "Take route A.",
+            immediateGoal: "Advance route A.",
+            expectedCost: "Leave B behind.",
+            expectedRisk: "Route A escalates.",
+            hookPressure: "A hook advances.",
+            characterPressure: "A pressure rises.",
+            tone: "tense",
+            selected: false,
+          },
+          {
+            choiceId: "choice-root-b",
+            fromNodeId: "root",
+            toNodeId: "node-b",
+            label: "B Route",
+            intent: "Take route B.",
+            immediateGoal: "Advance route B.",
+            expectedCost: "Lose A momentum.",
+            expectedRisk: "Route B resets pressure.",
+            hookPressure: "B hook revives.",
+            characterPressure: "B pressure returns.",
+            tone: "quiet",
+            selected: false,
+          },
+        ],
+      });
+
+      const chooseRun = runStderr(["branch", "choose", bookId, "choice-root-a", "--json"]);
+      expect(chooseRun.exitCode).toBe(0);
+      const chooseResult = JSON.parse(chooseRun.stdout);
+      expect(chooseResult.activeNodeId).toBe("node-a");
+
+      const switchRun = runStderr(["branch", "switch", bookId, "node-b", "--json"]);
+      expect(switchRun.exitCode).toBe(0);
+      const switchResult = JSON.parse(switchRun.stdout);
+      expect(switchResult.activeNodeId).toBe("node-b");
+      await expect(readFile(join(storyDir, "current_state.md"), "utf-8"))
+        .resolves.toContain("Root snapshot.");
+    });
+  });
+
   describe("inkos status", () => {
     it("shows project status with zero books", () => {
       const output = run(["status"]);

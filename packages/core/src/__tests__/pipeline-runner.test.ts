@@ -582,6 +582,121 @@ describe("PipelineRunner", () => {
     }
   });
 
+  it("restores the referenced snapshot when switching interactive branches", async () => {
+    const { root, runner, state, bookId } = await createRunnerFixture();
+    const baseBook = await state.loadBookConfig(bookId);
+    await state.saveBookConfig(bookId, {
+      ...baseBook,
+      narrativeMode: "interactive-tree",
+    });
+
+    const storyDir = join(state.bookDir(bookId), "story");
+    await mkdir(storyDir, { recursive: true });
+
+    await Promise.all([
+      writeFile(join(storyDir, "current_state.md"), "# Current State\n\n- Branch root aftermath.\n", "utf-8"),
+      writeFile(join(storyDir, "pending_hooks.md"), "# Pending Hooks\n\n- Root hook.\n", "utf-8"),
+    ]);
+    await state.snapshotState(bookId, 1);
+
+    await Promise.all([
+      writeFile(join(storyDir, "current_state.md"), "# Current State\n\n- Branch A later state.\n", "utf-8"),
+      writeFile(join(storyDir, "pending_hooks.md"), "# Pending Hooks\n\n- Branch A hook.\n", "utf-8"),
+    ]);
+    await state.snapshotState(bookId, 2);
+
+    await state.saveBranchTree(bookId, {
+      version: 1,
+      rootNodeId: "root",
+      activeNodeId: "node-a",
+      nodes: [
+        {
+          nodeId: "root",
+          parentNodeId: null,
+          sourceChapterId: null,
+          sourceChapterNumber: 0,
+          branchDepth: 0,
+          branchLabel: "Main Route",
+          status: "completed",
+          snapshotRef: { chapterNumber: 1 },
+          selectedChoiceId: "choice-root-a",
+          chapterIds: ["ch-0001"],
+          displayPath: "main",
+        },
+        {
+          nodeId: "node-a",
+          parentNodeId: "root",
+          sourceChapterId: "ch-0001",
+          sourceChapterNumber: 1,
+          branchDepth: 1,
+          branchLabel: "A Route",
+          status: "active",
+          snapshotRef: { chapterNumber: 2 },
+          selectedChoiceId: null,
+          chapterIds: ["ch-0002"],
+          displayPath: "main.a",
+        },
+        {
+          nodeId: "node-b",
+          parentNodeId: "root",
+          sourceChapterId: "ch-0001",
+          sourceChapterNumber: 1,
+          branchDepth: 1,
+          branchLabel: "B Route",
+          status: "dormant",
+          snapshotRef: { chapterNumber: 1 },
+          selectedChoiceId: null,
+          chapterIds: [],
+          displayPath: "main.b",
+        },
+      ],
+      choices: [
+        {
+          choiceId: "choice-root-a",
+          fromNodeId: "root",
+          toNodeId: "node-a",
+          label: "A Route",
+          intent: "Take route A.",
+          immediateGoal: "Advance route A.",
+          expectedCost: "Leave route B untouched.",
+          expectedRisk: "Route A escalates.",
+          hookPressure: "A hook moves.",
+          characterPressure: "A pressure rises.",
+          tone: "tense",
+          selected: true,
+        },
+        {
+          choiceId: "choice-root-b",
+          fromNodeId: "root",
+          toNodeId: "node-b",
+          label: "B Route",
+          intent: "Return to the earlier B route.",
+          immediateGoal: "Restore route B state.",
+          expectedCost: "Lose route A momentum.",
+          expectedRisk: "Need to rebuild pressure.",
+          hookPressure: "B hook wakes up.",
+          characterPressure: "B relationship strain returns.",
+          tone: "quiet",
+          selected: false,
+        },
+      ],
+    });
+
+    try {
+      const result = await runner.switchInteractiveBranch(bookId, "node-b");
+
+      expect(result.activeNodeId).toBe("node-b");
+      await expect(readFile(join(storyDir, "current_state.md"), "utf-8"))
+        .resolves.toContain("Branch root aftermath.");
+      const tree = await state.loadBranchTree(bookId);
+      expect(tree?.activeNodeId).toBe("node-b");
+      expect(tree?.nodes.find((node) => node.nodeId === "node-a")?.status).toBe("dormant");
+      expect(tree?.nodes.find((node) => node.nodeId === "node-b")?.status).toBe("active");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it("bootstraps missing control documents for legacy books before writing", async () => {
     const { root, runner, bookId } = await createRunnerFixture();
 
