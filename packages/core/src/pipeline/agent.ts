@@ -615,6 +615,10 @@ async function getSequentialWriteGuardError(
   bookId: string,
   toolName: "write_draft" | "write_full_pipeline",
 ): Promise<string | null> {
+  const pendingInteractiveChoice = await state.getPendingInteractiveChoice(bookId);
+  if (pendingInteractiveChoice) {
+    return `${toolName} 不能继续写作：互动分支 ${pendingInteractiveChoice.activeNodeId} 还在等待读者选择。请先完成分支选择，再继续写下一章。`;
+  }
   const nextNum = await state.getNextChapterNumber(bookId);
   const index = await state.loadChapterIndex(bookId);
   if (index.length === 0) return null;

@@ -408,6 +408,7 @@ export class PipelineRunner {
     try {
       await this.state.ensureControlDocuments(bookId);
       const book = await this.state.loadBookConfig(bookId);
+      await this.assertInteractiveChoiceSelected(bookId, book);
       const bookDir = this.state.bookDir(bookId);
       const chapterNumber = await this.state.getNextChapterNumber(bookId);
       const stageLanguage = await this.resolveBookLanguage(book);
@@ -950,6 +951,7 @@ export class PipelineRunner {
   private async _writeNextChapterLocked(bookId: string, wordCount?: number, temperatureOverride?: number): Promise<ChapterPipelineResult> {
     await this.state.ensureControlDocuments(bookId);
     const book = await this.state.loadBookConfig(bookId);
+    await this.assertInteractiveChoiceSelected(bookId, book);
     const bookDir = this.state.bookDir(bookId);
     const chapterNumber = await this.state.getNextChapterNumber(bookId);
     const stageLanguage = await this.resolveBookLanguage(book);
@@ -1862,6 +1864,22 @@ ${matrix}`,
 
   private formatInteractiveChapterId(chapterNumber: number): string {
     return `ch-${String(chapterNumber).padStart(4, "0")}`;
+  }
+
+  private async assertInteractiveChoiceSelected(bookId: string, book: Pick<BookConfig, "narrativeMode">): Promise<void> {
+    if (book.narrativeMode !== "interactive-tree") {
+      return;
+    }
+
+    const pending = await this.state.getPendingInteractiveChoice(bookId);
+    if (!pending) {
+      return;
+    }
+
+    throw new Error(
+      `Interactive branch ${pending.activeNodeId} is waiting for a choice. ` +
+      `Choose a branch before continuing writing.`,
+    );
   }
 
   private async buildPersistenceOutput(

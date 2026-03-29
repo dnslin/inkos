@@ -180,4 +180,114 @@ describe("agent pipeline tools", () => {
 
     expect(result.error).toContain("章节进度");
   });
+
+  it("blocks write_draft when an interactive branch is waiting for a reader choice", async () => {
+    const baseBook = await state.loadBookConfig(bookId);
+    await state.saveBookConfig(bookId, {
+      ...baseBook,
+      narrativeMode: "interactive-tree",
+    });
+    const tree = await state.ensureInteractiveTree(bookId);
+    await state.saveBranchTree(bookId, {
+      ...tree,
+      nodes: [
+        {
+          ...tree.nodes[0]!,
+          status: "awaiting-choice",
+          snapshotRef: { chapterNumber: 1 },
+          chapterIds: ["ch-0001"],
+        },
+      ],
+      choices: [
+        {
+          choiceId: "choice-root-1-1",
+          fromNodeId: "root",
+          toNodeId: "root-1-a",
+          label: "接受交易",
+          intent: "接受交易，先进入档案室。",
+          immediateGoal: "今晚进入档案室。",
+          expectedCost: "欠下一笔人情。",
+          expectedRisk: "后续会被监视。",
+          hookPressure: "看守线推进。",
+          characterPressure: "同伴信任下降。",
+          tone: "紧张",
+          selected: false,
+        },
+      ],
+    });
+
+    const writeDraft = vi.spyOn(pipeline, "writeDraft").mockResolvedValue({
+      chapterNumber: 2,
+      title: "Should Not Run",
+      wordCount: 100,
+      filePath: "books/agent-book/chapters/0002_Should_Not_Run.md",
+    });
+
+    const result = JSON.parse(await executeAgentTool(
+      pipeline,
+      state,
+      config,
+      "write_draft",
+      { bookId },
+    ));
+
+    expect(result.error).toMatch(/分支|选项|choice/i);
+    expect(writeDraft).not.toHaveBeenCalled();
+  });
+
+  it("blocks write_full_pipeline when an interactive branch is waiting for a reader choice", async () => {
+    const baseBook = await state.loadBookConfig(bookId);
+    await state.saveBookConfig(bookId, {
+      ...baseBook,
+      narrativeMode: "interactive-tree",
+    });
+    const tree = await state.ensureInteractiveTree(bookId);
+    await state.saveBranchTree(bookId, {
+      ...tree,
+      nodes: [
+        {
+          ...tree.nodes[0]!,
+          status: "awaiting-choice",
+          snapshotRef: { chapterNumber: 1 },
+          chapterIds: ["ch-0001"],
+        },
+      ],
+      choices: [
+        {
+          choiceId: "choice-root-1-1",
+          fromNodeId: "root",
+          toNodeId: "root-1-a",
+          label: "接受交易",
+          intent: "接受交易，先进入档案室。",
+          immediateGoal: "今晚进入档案室。",
+          expectedCost: "欠下一笔人情。",
+          expectedRisk: "后续会被监视。",
+          hookPressure: "看守线推进。",
+          characterPressure: "同伴信任下降。",
+          tone: "紧张",
+          selected: false,
+        },
+      ],
+    });
+
+    const writeNextChapter = vi.spyOn(pipeline, "writeNextChapter").mockResolvedValue({
+      chapterNumber: 2,
+      title: "Should Not Run",
+      wordCount: 100,
+      auditResult: { passed: true, issues: [], summary: "ok" },
+      revised: false,
+      status: "ready-for-review",
+    });
+
+    const result = JSON.parse(await executeAgentTool(
+      pipeline,
+      state,
+      config,
+      "write_full_pipeline",
+      { bookId, count: 1 },
+    ));
+
+    expect(result.error).toMatch(/分支|选项|choice/i);
+    expect(writeNextChapter).not.toHaveBeenCalled();
+  });
 });

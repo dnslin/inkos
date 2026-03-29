@@ -312,6 +312,33 @@ export class StateManager {
     return this.ensureInteractiveTreeAt(this.bookDir(bookId));
   }
 
+  async getPendingInteractiveChoice(bookId: string): Promise<{
+    activeNodeId: string;
+    choiceIds: ReadonlyArray<string>;
+  } | null> {
+    const book = await this.loadBookConfig(bookId).catch(() => null);
+    if (!book || book.narrativeMode !== "interactive-tree") {
+      return null;
+    }
+
+    const tree = await this.loadBranchTree(bookId);
+    if (!tree) {
+      return null;
+    }
+
+    const activeNode = tree.nodes.find((node) => node.nodeId === tree.activeNodeId);
+    if (!activeNode || activeNode.status !== "awaiting-choice") {
+      return null;
+    }
+
+    return {
+      activeNodeId: activeNode.nodeId,
+      choiceIds: tree.choices
+        .filter((choice) => choice.fromNodeId === activeNode.nodeId && !choice.selected)
+        .map((choice) => choice.choiceId),
+    };
+  }
+
   async ensureInteractiveTreeAt(bookDir: string): Promise<InteractiveBranchTree> {
     const existing = await this.loadBranchTreeAt(bookDir);
     if (existing) {
