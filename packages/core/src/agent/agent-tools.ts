@@ -39,6 +39,7 @@ const SubAgentParams = Type.Object({
   ]),
   instruction: Type.String({ description: "Natural language instruction from the main Agent" }),
   bookId: Type.Optional(Type.String({ description: "Book ID — required for all agents except architect" })),
+  chapterNumber: Type.Optional(Type.Number({ description: "Target chapter number for auditor/reviser. Omit to use the latest chapter." })),
 });
 
 export function createSubAgentTool(pipeline: PipelineRunner, activeBookId: string | null): AgentTool<typeof SubAgentParams> {
@@ -56,7 +57,7 @@ export function createSubAgentTool(pipeline: PipelineRunner, activeBookId: strin
       _signal?: AbortSignal,
       onUpdate?: AgentToolUpdateCallback,
     ): Promise<AgentToolResult<undefined>> {
-      const { agent, instruction, bookId } = params;
+      const { agent, instruction, bookId, chapterNumber } = params;
 
       const progress = (msg: string) => {
         onUpdate?.(textResult(msg));
@@ -92,8 +93,8 @@ export function createSubAgentTool(pipeline: PipelineRunner, activeBookId: strin
 
           case "auditor": {
             if (!bookId) return textResult("Error: bookId is required for the auditor agent.");
-            progress(`Auditing draft for "${bookId}"...`);
-            const audit = await pipeline.auditDraft(bookId);
+            progress(`Auditing chapter ${chapterNumber ?? "latest"} for "${bookId}"...`);
+            const audit = await pipeline.auditDraft(bookId, chapterNumber);
             progress(`Audit complete for "${bookId}".`);
             const issueCount = audit.issues?.length ?? 0;
             return textResult(
@@ -112,10 +113,10 @@ export function createSubAgentTool(pipeline: PipelineRunner, activeBookId: strin
                 : /rework|返工/.test(instruction)
                   ? "rework"
                   : "spot-fix";
-            progress(`Revising "${bookId}" in ${mode} mode...`);
-            await pipeline.reviseDraft(bookId, undefined, mode);
+            progress(`Revising "${bookId}" chapter ${chapterNumber ?? "latest"} in ${mode} mode...`);
+            await pipeline.reviseDraft(bookId, chapterNumber, mode);
             progress(`Revision complete for "${bookId}".`);
-            return textResult(`Revision (${mode}) complete for "${bookId}".`);
+            return textResult(`Revision (${mode}) complete for "${bookId}" chapter ${chapterNumber ?? "latest"}.`);
           }
 
           case "exporter": {

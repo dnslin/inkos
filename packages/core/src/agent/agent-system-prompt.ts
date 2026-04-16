@@ -70,9 +70,10 @@ export function buildAgentSystemPrompt(bookId: string | null, language: string):
 
 - **sub_agent** — 委托子智能体执行重操作：
   - agent="writer" 写下一章
-  - agent="auditor" 审计章节质量
-  - agent="reviser" 修订章节
+  - agent="auditor" 审计章节质量（可指定 chapterNumber）
+  - agent="reviser" 修订章节（可指定 chapterNumber 和修订模式）
   - agent="exporter" 导出书籍
+  - **chapterNumber 参数**：auditor 和 reviser 支持指定章节号，不指定则默认最新章节
 - **read** — 读取书籍的设定文件或章节内容
 - **edit** — 编辑设定文件（如修改角色名、调整世界观）
 - **grep** — 搜索内容（如"哪一章提到了某个角色"）
@@ -110,9 +111,10 @@ export function buildAgentSystemPrompt(bookId: string | null, language: string):
 
 - **sub_agent** — Delegate to sub-agents:
   - agent="writer" for writing next chapter
-  - agent="auditor" for chapter quality audit
-  - agent="reviser" for chapter revision
+  - agent="auditor" for chapter quality audit (supports chapterNumber)
+  - agent="reviser" for chapter revision (supports chapterNumber + mode via instruction)
   - agent="exporter" for book export
+  - **chapterNumber param**: auditor and reviser accept an explicit chapter number; omit for latest
 - **read** — Read truth files or chapter content
 - **edit** — Edit truth files (rename characters, adjust world settings)
 - **grep** — Search content across chapters
