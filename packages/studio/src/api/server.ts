@@ -484,7 +484,7 @@ async function probeServiceCapabilities(args: {
         await chatCompletion(client, model, [{ role: "user", content: "hi" }], { maxTokens: 248 });
         const models = discoveredModels.length > 0
           ? discoveredModels
-          : [{ id: model, name: model }];
+          : preset?.knownModels?.map((id) => ({ id, name: id })) ?? [{ id: model, name: model }];
         return {
           ok: true,
           models,
