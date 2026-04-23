@@ -21,9 +21,9 @@
 
 AI Agent 自主写小说——写、审、改，全程接管。覆盖玄幻、仙侠、都市、科幻等多种风格，支持续写、番外、同人、仿写等创作形式。人工审核门控确保你始终掌控全局。已发布为 [OpenClaw](https://clawhub.ai/narcooo/inkos) skill。
 
-**InkOS Studio 2.0 正式发布！** — 直接运行 `inkos` 启动本地 Web 工作台。书籍管理、章节审阅编辑、实时写作进度、市场雷达、数据分析、AI 检测、文风分析、题材管理、守护进程控制、真相文件编辑——CLI 能做的，Studio 全部可视化。
+**InkOS Studio 2.0 正式发布！** — 直接运行 `inkos` 启动本地 Web 工作台。这是 InkOS 面向人类用户的唯一主入口：书籍管理、章节审阅编辑、实时写作进度、市场雷达、数据分析、AI 检测、文风分析、题材管理、守护进程控制、真相文件编辑——覆盖面向人类用户的主要工作台能力。
 
-**InkOS TUI 正式发布！** — 运行 `inkos tui` 进入全屏交互仪表盘。对话式创作、自然语言操作书籍、slash 命令补全、主题动效——TUI、Studio、OpenClaw 共享同一套交互内核。
+**`inkos interact --json` 结构化入口** — 面向 OpenClaw、外部 Agent 与自动化系统的 structured agent/system interface。`inkos tui` 已移除运行时，当前仅保留一个发布周期的退场提示，引导迁移到 Studio 与结构化交互入口。
 
 **Native English novel writing now supported！** Set `--lang en` to write in English. See [English README](README.en.md) for details.
 
@@ -54,13 +54,13 @@ clawhub install inkos          # 从 ClawHub 安装 InkOS Skill
 
 通过 npm 安装或克隆本项目时，`skills/SKILL.md` 已包含在内，🦞 可直接读取——无需额外从 ClawHub 安装。
 
-安装后，Claw 应优先通过共享交互入口调用 InkOS：
+安装后，Claw 应优先通过结构化交互入口调用 InkOS：
 
 ```bash
 inkos interact --json --message "继续当前书，但把节奏再收紧一点"
 ```
 
-这条入口直接走和项目 TUI 相同的交互执行内核，因此 OpenClaw、TUI、Studio 共用同一套控制脑。返回的 JSON 包含：
+这条入口是给 OpenClaw、外部 Agent 与自动化系统使用的 structured agent/system interface。返回的 JSON 包含：
 - 解析后的 request
 - assistant 文本回复
 - 更新后的 interaction session
@@ -68,7 +68,7 @@ inkos interact --json --message "继续当前书，但把节奏再收紧一点"
 - pending decision
 - recent events
 
-`plan chapter` / `compose chapter` / `draft` / `audit` / `revise` / `write next` 这些原子命令仍然保留，但更适合作为底层工具，而不是 OpenClaw 的首选入口。也可以在 [ClawHub](https://clawhub.ai) 搜索 `inkos` 在线查看。
+`plan chapter` / `compose chapter` / `draft` / `audit` / `revise` / `write next` 这些原子命令仍然保留，但更适合作为底层工具。人类用户默认直接运行 `inkos` 进入 Studio；也可以在 [ClawHub](https://clawhub.ai) 搜索 `inkos` 在线查看。
 
 ### 配置
 
@@ -128,12 +128,12 @@ inkos config show-models        # 查看当前路由
 
 **统一交互内核 + TUI 仪表盘 + Studio 助手**
 
-- **共享交互运行时**：TUI、Studio、`inkos interact`、OpenClaw Skill 共用同一套自然语言理解 + 执行内核，支持 15+ 种意图（写作、修订、重写、改名、导出、切换书籍等）
-- **Ink TUI 仪表盘**：`inkos` 直接进入全屏交互式仪表盘（Ink + React），对话式创作体验，slash 命令自动补全，主题动效，i18n 双语
-- **Studio 助手面板**：右侧 AI 助手面板接入共享交互内核，支持自然语言操作书籍——改名、写章、审计、导出等，实时显示执行状态
+- **共享交互运行时**：TUI、Studio、`inkos interact --json`、OpenClaw Skill 共用同一套自然语言理解 + 执行运行时，支持 15+ 种意图（写作、修订、重写、改名、导出、切换书籍等）
+- **Ink TUI 仪表盘**：在 v1.2 发布时，`inkos` 直接进入全屏交互式仪表盘（Ink + React），支持对话式创作、slash 命令自动补全、主题动效与 i18n 双语
+- **Studio 助手面板**：右侧 AI 助手面板接入共享交互运行时，支持自然语言操作书籍——改名、写章、审计、导出等，实时显示执行状态
 - **对话式建书**：通过自然语言对话逐步构思书籍设定，草稿就绪后一键创建
 - **全书实体改名**：`把林烬改成张三` 或 `/rename 林烬 => 张三`，全量扫描章节 + 真相文件，一次替换
-- **`inkos interact`**：共享交互 JSON 入口，OpenClaw / 外部 Agent 可直接调用
+- **`inkos interact --json`**：共享交互 JSON 入口，供 OpenClaw / 外部 Agent 调用
 - **Thinking 模型温度夹制**：kimi-k2.5 等 thinking 模型自动强制 temperature=1，兼容 per-call 温度调参
 - **Studio 死代码清理**：移除未使用的 shadcn 组件和依赖，-2800 行
 

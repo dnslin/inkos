@@ -34,10 +34,10 @@
     "directory": "packages/cli"
   },
   "scripts": {
-    "prepack": "node ../../scripts/prepare-package-for-publish.mjs",
+    "prepack": "npm run build && node ../../scripts/prepare-package-for-publish.mjs",
     "postpack": "node ../../scripts/restore-package-json.mjs",
     "prepublishOnly": "node ../../scripts/verify-no-workspace-protocol.mjs .",
-    "build": "tsc",
+    "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && tsc",
     "dev": "tsc --watch",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
@@ -46,19 +46,10 @@
     "@actalk/inkos-core": "workspace:*",
     "@actalk/inkos-studio": "workspace:*",
     "commander": "^13.0.0",
-    "dotenv": "^16.4.0",
-    "epub-gen-memory": "^1.0.10",
-    "ink": "^7.0.0",
-    "ink-text-input": "^6.0.0",
-    "marked": "^15.0.12",
-    "marked-terminal": "^7.3.0",
-    "react": "^19.2.4"
+    "dotenv": "^16.4.0"
   },
   "devDependencies": {
-    "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.0.0",
-    "@types/react": "^19.2.14",
-    "ink-testing-library": "^4.0.0",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   },

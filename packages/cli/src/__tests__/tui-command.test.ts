@@ -59,14 +59,18 @@ describe("tui command", () => {
     await expect(readFile(join(tempDir, ".env"), "utf-8")).resolves.toBe("EXISTING_ENV=1\n");
   });
 
-  it("launches the TUI when the explicit tui command is used", async () => {
-    const launchTui = vi.fn(async () => {});
+  it("prints a migration notice when the explicit tui command is used", async () => {
     const launchStudio = vi.fn(async () => {});
-    const program = createProgram({ launchTui, launchStudio });
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const program = createProgram({ launchStudio });
 
     await program.parseAsync(["tui"], { from: "user" });
 
-    expect(launchTui).toHaveBeenCalledTimes(1);
+    expect(stdout).toHaveBeenCalledWith(
+      "The InkOS TUI is being retired.\n" +
+        "For interactive work, run 'inkos' or 'inkos studio'.\n" +
+        "For agents and automation, run 'inkos interact --json' or use the atomic commands.\n",
+    );
     expect(launchStudio).not.toHaveBeenCalled();
   });
 

@@ -3,6 +3,7 @@ import {
   buildCreationDraftSummary,
   canCreateFromDraft,
   defaultChapterWordsForLanguage,
+  getBookCreateCopy,
   platformOptionsForLanguage,
   pickValidValue,
   resolveDraftInstruction,
@@ -101,6 +102,38 @@ describe("resolveDraftInstruction", () => {
   it("forces the first ideation turn through /new so an active book does not hijack the flow", () => {
     expect(resolveDraftInstruction("我想写个港风商战悬疑", false)).toBe("/new 我想写个港风商战悬疑");
     expect(resolveDraftInstruction("把世界观改成近未来港口城", true)).toBe("把世界观改成近未来港口城");
+  });
+});
+
+describe("BookCreate copy", () => {
+  it("uses empty-state and loading copy that matches the current creation flow", () => {
+    const zh = getBookCreateCopy("zh");
+    const en = getBookCreateCopy("en");
+
+    expect(zh.idleTitle).toBe("从一个新想法开始创建");
+    expect(zh.idleBody).toContain("当前创建流程所需的信息");
+    expect(zh.loadingDraft).toBe("读取创建草案中…");
+    expect(zh.syncedHint).toBe("这份草案会跟随当前创建流程更新。");
+    expect(zh.helperBody).not.toContain("TUI");
+    expect(zh.helperBody).not.toContain("/draft");
+
+    expect(en.idleTitle).toBe("Start a book from a new idea");
+    expect(en.idleBody).toContain("current creation flow");
+    expect(en.loadingDraft).toBe("Loading creation draft…");
+    expect(en.syncedHint).toBe("This draft updates with the current creation flow.");
+    expect(en.helperBody).not.toContain("TUI");
+    expect(en.helperBody).not.toContain("/draft");
+  });
+
+  it("keeps visible copy free of the removed shared-workflow wording", () => {
+    for (const language of ["zh", "en"] as const) {
+      const copy = getBookCreateCopy(language);
+      const visibleText = [copy.idleTitle, copy.idleBody, copy.loadingDraft, copy.syncedHint, copy.helperBody].join(" ");
+
+      expect(visibleText).not.toContain("TUI");
+      expect(visibleText).not.toContain("Studio Chat");
+      expect(visibleText).not.toContain("/draft");
+    }
   });
 });
 

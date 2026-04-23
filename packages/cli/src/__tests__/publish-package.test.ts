@@ -42,6 +42,17 @@ async function extractPackedPackageJson(packageDir: string, packDir: string) {
   });
 }
 
+async function listPackedEntries(packageDir: string, packDir: string) {
+  const tarballPath = await packPackage(packageDir, packDir);
+  const tarArgs = process.platform === "win32" ? ["--force-local", "-tf"] : ["-tf"];
+  const archiveListing = execFileSync("tar", [...tarArgs, tarballPath], {
+    cwd: workspaceRoot,
+    encoding: "utf-8",
+  });
+
+  return archiveListing.split("\n").filter(Boolean);
+}
+
 describe.sequential("publish packaging", () => {
   it("rewrites workspace package versions for canary publishing", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "inkos-version-script-"));
@@ -234,6 +245,33 @@ describe.sequential("publish packaging", () => {
       expect(packedPackageJson.dependencies["@actalk/inkos-studio"]).toBe(studioPackageJson.version);
     } finally {
       await rm(packDir, { recursive: true, force: true });
+    }
+  });
+
+  it("excludes stale dist/tui artifacts from the CLI tarball", { timeout: 30_000 }, async () => {
+    const packDir = await mkdtemp(join(tmpdir(), "inkos-cli-pack-entries-"));
+    const staleTuiDir = resolve(cliDir, "dist", "tui");
+    const staleFixtureDir = resolve(staleTuiDir, "__stale-test__");
+    const staleFixturePath = resolve(staleFixtureDir, "fake-stale.js");
+    const staleFixtureContent = "export const stale = true;\n";
+    const staleTarEntry = "package/dist/tui/__stale-test__/fake-stale.js";
+
+    try {
+      await mkdir(staleFixtureDir, { recursive: true });
+      await writeFile(staleFixturePath, staleFixtureContent);
+      expect(await readFile(staleFixturePath, "utf-8")).toBe(staleFixtureContent);
+
+      const archiveEntries = await listPackedEntries(cliDir, packDir);
+
+      expect(archiveEntries).not.toContain(staleTarEntry);
+      expect(archiveEntries.some((entry) => entry.startsWith("package/dist/tui/"))).toBe(false);
+    } finally {
+      await rm(packDir, { recursive: true, force: true });
+      await rm(staleFixtureDir, { recursive: true, force: true });
+      const remainingStaleEntries = await readdir(staleTuiDir).catch(() => []);
+      if (remainingStaleEntries.length === 0) {
+        await rm(staleTuiDir, { recursive: true, force: true });
+      }
     }
   });
 

@@ -21,9 +21,9 @@
 
 Open-source AI Agent that autonomously writes, audits, and revises novels — with human review gates that keep you in control. Supports LitRPG, Progression Fantasy, Isekai, Romantasy, Sci-Fi, and more. Continuation, spinoff, fanfic, and style imitation workflows built in.
 
-**InkOS Studio 2.0 is here!** — run `inkos` to launch the local web workbench. Book management, chapter review & editing, real-time writing progress, market radar, analytics, AI detection, style analysis, genre management, daemon control, truth file editing — everything the CLI does, now visual.
+**InkOS Studio 2.0 is here!** — run `inkos` to launch the local web workbench. It is InkOS's sole primary human entrypoint: book management, chapter review & editing, real-time writing progress, market radar, analytics, AI detection, style analysis, genre management, daemon control, and truth file editing — covering the main workbench capabilities for human users.
 
-**InkOS TUI is here!** — run `inkos tui` to launch a full-screen interactive dashboard. Conversational creation, natural-language book operations, slash command autocomplete, themed animations — TUI, Studio, and OpenClaw share the same interaction kernel.
+**`inkos interact --json` structured interface** — the structured agent/system interface for OpenClaw, external agents, and automation. `inkos tui` no longer hosts a runtime; for one release cycle it only prints a retirement / migration notice that points users to Studio and the structured interface.
 
 **Native English novel writing now supported！** — 10 built-in English genre profiles with dedicated pacing rules, fatigue word lists, and audit dimensions. Set `--lang en` and go.
 
@@ -45,13 +45,13 @@ clawhub install inkos          # Install from ClawHub
 
 If you installed via npm or cloned the repo, `skills/SKILL.md` is already included — 🦞 can read it directly without a separate ClawHub install.
 
-Once installed, Claw should prefer the shared interaction entry:
+Once installed, Claw should prefer the structured interaction entry:
 
 ```bash
 inkos interact --json --message "continue the current book, but keep the pacing tighter"
 ```
 
-This routes through the same conversation executor used by the project TUI, so OpenClaw, TUI, and Studio stay on the same control brain. The JSON payload includes:
+This is the structured agent/system interface for OpenClaw, external agents, and automation. The JSON payload includes:
 - parsed request
 - assistant response text
 - updated interaction session
@@ -59,7 +59,7 @@ This routes through the same conversation executor used by the project TUI, so O
 - pending decision
 - recent events
 
-Atomic commands (`plan chapter` / `compose chapter` / `draft` / `audit` / `revise` / `write next`) are still available, but they are now lower-level tools rather than the preferred OpenClaw entry. You can also browse it on [ClawHub](https://clawhub.ai) by searching `inkos`.
+Atomic commands (`plan chapter` / `compose chapter` / `draft` / `audit` / `revise` / `write next`) are still available, but they are lower-level tools. Human users should run `inkos` and work through Studio by default. You can also browse it on [ClawHub](https://clawhub.ai) by searching `inkos`.
 
 ### Configure
 
@@ -123,14 +123,14 @@ Agents without explicit overrides fall back to the global model.
 
 **Unified Interaction Kernel + TUI Dashboard + Studio Assistant**
 
-- **Shared Interaction Runtime**: TUI, Studio, `inkos interact`, and OpenClaw Skill share a single NL understanding + execution kernel, supporting 15+ intents (write, revise, rewrite, rename, export, switch book, etc.)
-- **Ink TUI Dashboard**: `inkos` launches a full-screen interactive dashboard (Ink + React) with conversational creation, slash command autocomplete, themed animations, and bilingual i18n
-- **Studio Assistant Panel**: right-side AI assistant panel connects to the shared interaction kernel — natural language book operations (rename, write, audit, export) with real-time execution status
-- **Conversational Book Creation**: brainstorm book settings through natural language dialogue, one-click create when draft is ready
-- **Book-wide Entity Rename**: `rename Lin Jin to Zhang San` or `/rename Lin Jin => Zhang San` — scans all chapters + truth files in one pass
-- **`inkos interact`**: shared interaction JSON endpoint for OpenClaw / external agent integration
-- **Thinking Model Temperature Clamp**: kimi-k2.5 and similar thinking models auto-clamped to temperature=1, compatible with per-call temperature overrides
-- **Studio Dead Code Cleanup**: removed unused shadcn components and dependencies, -2800 lines
+- **Shared interaction runtime**: TUI, Studio, `inkos interact --json`, and the OpenClaw Skill shared a single NL understanding + execution runtime, supporting 15+ intents (write, revise, rewrite, rename, export, switch book, etc.)
+- **Ink TUI Dashboard**: in the v1.2 release context, `inkos` launched a full-screen interactive dashboard (Ink + React) with conversational creation, slash command autocomplete, themed animations, and bilingual i18n
+- **Studio assistant panel**: the right-side AI assistant panel connected to the shared interaction runtime for natural-language book operations (rename, write, audit, export) with real-time execution status
+- **Conversational book creation**: brainstorm book settings through natural language dialogue, then create once the draft is ready
+- **Book-wide entity rename**: `rename Lin Jin to Zhang San` or `/rename Lin Jin => Zhang San` — scans all chapters + truth files in one pass
+- **`inkos interact --json`**: shared interaction JSON endpoint for OpenClaw / external agent integration
+- **Thinking model temperature clamp**: kimi-k2.5 and similar thinking models auto-clamped to temperature=1, compatible with per-call temperature overrides
+- **Studio dead code cleanup**: removed unused shadcn components and dependencies, -2800 lines
 
 ### Write Your First Book
 
