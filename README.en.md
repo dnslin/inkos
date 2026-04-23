@@ -423,6 +423,16 @@ pnpm typecheck    # Type-check without emitting
  </picture>
 </a>
 
+## Skills Download History
+
+<div align="center">
+
+<a href="https://skill-history.com/narcooo/inkos">
+  <img alt="Skills Download History" src="https://skill-history.com/chart/narcooo/inkos.svg" />
+</a>
+
+</div>
+
 ## Repobeats
 
 ![Alt](https://repobeats.axiom.co/api/embed/024114415c1505a8c27fb121e3b392524e48f583.svg "Repobeats analytics image")
