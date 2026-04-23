@@ -4,7 +4,7 @@ import {
   createInteractionToolsFromDeps,
   type InteractionRuntimeTools,
 } from "@actalk/inkos-core";
-import { buildPipelineConfig, loadConfig } from "../utils.js";
+import { buildPipelineConfig, loadConfig } from "./utils.js";
 
 type CliPipelineLike = Pick<PipelineRunner, "writeNextChapter" | "reviseDraft">;
 type CliStateLike = Pick<StateManager, "ensureControlDocuments" | "bookDir" | "loadBookConfig" | "loadChapterIndex" | "saveChapterIndex" | "listBooks">;

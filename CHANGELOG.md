@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Breaking Changes
+
+- `inkos` is documented as launching Studio by default, and the local web workbench is now the sole primary human entrypoint.
+- `inkos interact --json` is documented as the structured agent/system interface for OpenClaw, external agents, and automation.
+- `inkos tui` no longer represents a supported runtime; for one release cycle it only prints a retirement / migration notice that points users to Studio and the structured interface.
+
+### Documentation
+
+- Updated `/README.md`, `/README.en.md`, `/README.ja.md`, and `/skills/SKILL.md` to remove TUI-first / three-entry positioning and align all user-facing guidance to the web-first product model.
+
 ## v1.3.6
 
 ### Release Focus

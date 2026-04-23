@@ -48,6 +48,7 @@ interface AgentResponse {
 interface PlatformCopy {
   readonly idleTitle: string;
   readonly idleBody: string;
+  readonly loadingDraft: string;
   readonly promptLabel: string;
   readonly promptPlaceholder: string;
   readonly promptPlaceholderFollowup: string;
@@ -80,8 +81,9 @@ const PLATFORMS_EN: ReadonlyArray<PlatformOption> = [
 
 const PAGE_COPY: Record<"zh" | "en", PlatformCopy> = {
   zh: {
-    idleTitle: "从一句模糊想法开始",
-    idleBody: "直接描述题材、世界观、主角、核心冲突，或告诉我你想先改哪一块。共享草案会在 TUI 和 Studio Chat 之间同步。",
+    idleTitle: "从一个新想法开始创建",
+    idleBody: "先描述题材、世界观、主角、核心冲突，或告诉我你想先定哪一块。这里会逐步整理当前创建流程所需的信息。",
+    loadingDraft: "读取创建草案中…",
     promptLabel: "继续打磨这本书",
     promptPlaceholder: "例如：我想写个港风商战悬疑，主角先做灰产再洗白。",
     promptPlaceholderFollowup: "例如：世界观改成近未来港口城；女主不要太早出场；卷一先查账再砸场。",
@@ -93,13 +95,14 @@ const PAGE_COPY: Record<"zh" | "en", PlatformCopy> = {
     draftHeading: "当前 foundation 草案",
     missingHeading: "还缺这些关键信息",
     missingHint: "这些字段未必都要一次填满，但缺得太多时不要急着建书。",
-    syncedHint: "这份草案和 TUI / Studio Chat 共享。",
+    syncedHint: "这份草案会跟随当前创建流程更新。",
     helperTitle: "建议这样推进",
-    helperBody: "先定世界观和主角，再定核心冲突、简介和卷一方向。想看当前草案时，可以在 TUI 里用 /draft。",
+    helperBody: "先定世界观和主角，再定核心冲突、简介和卷一方向。",
   },
   en: {
-    idleTitle: "Start from a rough idea",
-    idleBody: "Describe the genre, world, protagonist, and core conflict. The shared draft stays in sync across TUI and Studio Chat.",
+    idleTitle: "Start a book from a new idea",
+    idleBody: "Describe the genre, world, protagonist, core conflict, or tell me which part you want to lock first. This view gathers the details needed for the current creation flow.",
+    loadingDraft: "Loading creation draft…",
     promptLabel: "Refine this book",
     promptPlaceholder: "Example: I want a harbor-noir business thriller about a fixer trying to go legit.",
     promptPlaceholderFollowup: "Example: move the world to a near-future port city; delay the heroine; make volume one about chasing ledgers first.",
@@ -111,11 +114,15 @@ const PAGE_COPY: Record<"zh" | "en", PlatformCopy> = {
     draftHeading: "Current foundation draft",
     missingHeading: "Still missing",
     missingHint: "You do not need every field immediately, but do not create the book while the foundation is still vague.",
-    syncedHint: "This draft is shared with TUI and Studio Chat.",
+    syncedHint: "This draft updates with the current creation flow.",
     helperTitle: "Recommended flow",
-    helperBody: "Lock the world and protagonist first, then settle the conflict, blurb, and volume-one direction. In TUI, use /draft to inspect the same draft.",
+    helperBody: "Lock the world and protagonist first, then settle the conflict, blurb, and volume-one direction.",
   },
 };
+
+export function getBookCreateCopy(language: "zh" | "en"): PlatformCopy {
+  return PAGE_COPY[language];
+}
 
 export function pickValidValue(current: string, available: ReadonlyArray<string>): string {
   if (current && available.includes(current)) {
@@ -247,7 +254,7 @@ export function BookCreate({ nav, theme, t }: { nav: Nav; theme: Theme; t: TFunc
   const c = useColors(theme);
   const { data: project } = useApi<{ language: string }>("/project");
   const projectLang = (project?.language ?? "zh") as "zh" | "en";
-  const copy = PAGE_COPY[projectLang];
+  const copy = getBookCreateCopy(projectLang);
 
   const [draft, setDraft] = useState<BookCreationDraft | undefined>();
   const [input, setInput] = useState("");
@@ -408,7 +415,7 @@ export function BookCreate({ nav, theme, t }: { nav: Nav; theme: Theme; t: TFunc
             </div>
 
             {loadingDraft ? (
-              <div className="text-sm text-muted-foreground">{projectLang === "zh" ? "读取共享草案中…" : "Loading shared draft…"}</div>
+              <div className="text-sm text-muted-foreground">{copy.loadingDraft}</div>
             ) : draft ? (
               <div className="space-y-4">
                 {summaryRows.length > 0 ? (

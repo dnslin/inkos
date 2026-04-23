@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,9 +8,32 @@ import { StateManager } from "@actalk/inkos-core";
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const cliDir = resolve(testDir, "..", "..");
-const cliEntry = resolve(cliDir, "dist", "index.js");
+const workspaceRoot = resolve(cliDir, "..", "..");
 
+let cliEntry: string;
+let isolatedCliDir: string;
 let projectDir: string;
+
+async function buildIsolatedCli(): Promise<string> {
+  isolatedCliDir = await mkdtemp(join(cliDir, ".cli-integration-"));
+  const isolatedDistDir = join(isolatedCliDir, "dist");
+  const tscCmd = resolve(
+    cliDir,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "tsc.cmd" : "tsc",
+  );
+
+  execFileSync(tscCmd, ["-p", resolve(cliDir, "tsconfig.json"), "--outDir", isolatedDistDir], {
+    cwd: cliDir,
+    env: process.env,
+    encoding: "utf-8",
+    shell: process.platform === "win32",
+  });
+  await copyFile(resolve(cliDir, "package.json"), join(isolatedCliDir, "package.json"));
+
+  return join(isolatedDistDir, "index.js");
+}
 
 function buildTestEnv(overrides?: Record<string, string>) {
   const baseEnv = Object.fromEntries(
@@ -63,11 +86,17 @@ const failingLlmEnv = {
 
 describe("CLI integration", () => {
   beforeAll(async () => {
+    cliEntry = await buildIsolatedCli();
     projectDir = await mkdtemp(join(tmpdir(), "inkos-cli-test-"));
   });
 
   afterAll(async () => {
-    await rm(projectDir, { recursive: true, force: true });
+    if (projectDir) {
+      await rm(projectDir, { recursive: true, force: true });
+    }
+    if (isolatedCliDir) {
+      await rm(isolatedCliDir, { recursive: true, force: true });
+    }
   });
 
   describe("inkos --version", () => {

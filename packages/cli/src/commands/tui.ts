@@ -1,18 +1,13 @@
 import { Command } from "commander";
-import { launchTui } from "../tui/app.js";
 
-export interface TuiCommandHooks {
-  readonly launchTui?: (projectRoot: string) => Promise<void> | void;
-}
-
-export function createTuiCommand(hooks: TuiCommandHooks = {}): Command {
+export function createTuiCommand(): Command {
   return new Command("tui")
-    .description("Open the InkOS project workspace TUI")
-    .action(async () => {
-      if (hooks.launchTui) {
-        await hooks.launchTui(process.cwd());
-        return;
-      }
-      await launchTui(process.cwd());
+    .description("Show the InkOS TUI migration notice")
+    .action(() => {
+      process.stdout.write(
+        "The InkOS TUI is being retired.\n" +
+        "For interactive work, run 'inkos' or 'inkos studio'.\n" +
+        "For agents and automation, run 'inkos interact --json' or use the atomic commands.\n",
+      );
     });
 }

@@ -132,7 +132,7 @@ This returns a structured payload containing:
 - pending decision
 - recent interaction events
 
-Use this as the primary OpenClaw entry because it shares the same control layer as the project TUI.
+Use this as the primary OpenClaw entry because it is the structured agent/system interface for OpenClaw, external agents, and automation, while `inkos` now defaults human users into Studio.
 
 ### Workflow 2.6: Steering Chapter Focus Before Writing
 
@@ -332,20 +332,19 @@ inkos interact --json --message "/replace 5 旧文本 => 新文本"
 - Precisely replaces text in chapter 5 only
 - Marks chapter for review after patching
 
-### Workflow 14: Interactive TUI Dashboard
+### Workflow 14: Studio Default Entry + TUI Sunset Stub
 
 ```bash
 inkos
+inkos tui
 ```
-- Launches a full-screen Ink + React dashboard with conversational creation
-- Slash command autocomplete (Tab), input history (arrow keys)
-- Themed activity animations per operation (writing, auditing, revising, planning)
-- Bilingual i18n (Chinese / English)
-- Shares the same interaction kernel as `inkos interact` and Studio
+- `inkos` launches Studio, the local web workbench and sole primary human entrypoint
+- `inkos tui` no longer launches a runtime; for one release cycle it only prints a retirement / migration notice
+- Use `inkos interact --json` when OpenClaw, external agents, or automation need the structured agent/system interface
 
 ## InkOS Studio (Web Workbench)
 
-`inkos studio` launches a local web UI (default port 4567) that provides a visual interface for all InkOS operations:
+`inkos studio` launches a local web UI (default port 4567) that provides the main visual workbench capabilities for human users:
 
 - **Book management** — create, delete, export (TXT/MD/EPUB), configure per-book settings
 - **Chapter review & editing** — approve/reject drafts, edit content inline, multi-mode revision (polish/spot-fix/rewrite/anti-detect)
@@ -364,7 +363,7 @@ inkos studio              # Start on default port 4567
 inkos studio -p 8080      # Start on custom port
 ```
 
-The right-side **AI Assistant panel** in Studio shares the same interaction kernel as TUI and `inkos interact`. You can type natural language commands (rename entities, write chapters, audit, export) directly in the assistant panel.
+The right-side **AI Assistant panel** in Studio shares the same interaction runtime as `inkos interact`. Human users can type natural language commands (rename entities, write chapters, audit, export) directly in the assistant panel, while external agents and automation should use `inkos interact --json`.
 
 ## Advanced: Natural Language Agent Mode
 
@@ -511,8 +510,10 @@ inkos genre copy xuanhuan
 | `inkos studio` | Start web workbench | `-p` for port. Local web UI for book management |
 | `inkos fanfic show [book-id]` | Display parsed fanfic canon | Shows imported source material analysis |
 | `inkos fanfic refresh [book-id]` | Re-import and regenerate fanfic canon | `--from <file>` for updated source material |
-| `inkos interact` | Shared interaction endpoint | `--json`, `--message`, `--book`. Primary entry for OpenClaw |
-| `inkos` (no args) | Launch TUI dashboard | Full-screen Ink + React interactive dashboard |
+| `inkos interact` | Shared interaction command | `--message`, `--book`. Add `--json` when OpenClaw, external agents, or automation need structured output |
+| `inkos interact --json` | Structured agent/system interface | Primary structured entry for OpenClaw, external agents, and automation |
+| `inkos` (no args) | Launch Studio | Default local web workbench and primary human entrypoint |
+| `inkos tui` | Print TUI retirement notice | One-release-cycle sunset stub that points users to Studio and `inkos interact --json` |
 
 ## Error Handling
 

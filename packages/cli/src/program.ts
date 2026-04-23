@@ -28,13 +28,11 @@ import { createStudioCommand, launchStudioEntry } from "./commands/studio.js";
 import { consolidateCommand } from "./commands/consolidate.js";
 import { createInteractCommand, type InteractCommandHooks } from "./commands/interact.js";
 import { createTuiCommand } from "./commands/tui.js";
-import { launchTui } from "./tui/app.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 
 export interface ProgramHooks {
-  readonly launchTui?: (projectRoot: string) => Promise<void> | void;
   readonly launchStudio?: (projectRoot: string, port: string) => Promise<void> | void;
   readonly runInteraction?: InteractCommandHooks["runInteraction"];
   readonly readInteractionInput?: InteractCommandHooks["readInput"];
@@ -82,7 +80,7 @@ export function createProgram(hooks: ProgramHooks = {}): Command {
     runInteraction: hooks.runInteraction,
     readInput: hooks.readInteractionInput,
   }));
-  program.addCommand(createTuiCommand({ launchTui: hooks.launchTui }));
+  program.addCommand(createTuiCommand());
 
   return program;
 }

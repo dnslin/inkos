@@ -19,11 +19,11 @@
 
 ---
 
-小説の執筆・監査・修正を自律的に行うオープンソースCLIエージェント。人間によるレビューゲートにより、常にコントロールを維持できます。LitRPG、プログレッションファンタジー、異世界転生、ロマンタジー、SF など多数のジャンルに対応。続編・スピンオフ・二次創作・文体模倣ワークフローを内蔵。
+小説の執筆・監査・修正を自律的に行うオープンソースAIエージェント。人間によるレビューゲートにより、常にコントロールを維持できます。LitRPG、プログレッションファンタジー、異世界転生、ロマンタジー、SF など多数のジャンルに対応。続編・スピンオフ・二次創作・文体模倣ワークフローを内蔵。
 
-**InkOS Studio 2.0 正式リリース！** — `inkos` を実行してローカル Web ワークベンチを起動。書籍管理、章のレビュー＆編集、リアルタイム執筆進捗、市場レーダー、アナリティクス、AI検出、スタイル分析、ジャンル管理、デーモン制御、真実ファイル編集 — CLI の全機能をビジュアルで利用可能。
+**InkOS Studio 2.0 正式リリース！** — `inkos` を実行してローカル Web ワークベンチを起動。これは InkOS の人間向け唯一の主入口であり、書籍管理、章のレビュー＆編集、リアルタイム執筆進捗、市場レーダー、アナリティクス、AI検出、スタイル分析、ジャンル管理、デーモン制御、真実ファイル編集をまとめて扱えます。
 
-**InkOS TUI 正式リリース！** — `inkos tui` を実行してフルスクリーンのインタラクティブダッシュボードを起動。会話型創作、自然言語での書籍操作、スラッシュコマンド自動補完、テーマアニメーション——TUI、Studio、OpenClaw が同一のインタラクションカーネルを共有。
+**`inkos interact --json` 構造化インターフェース** — OpenClaw、外部エージェント、自動化向けの structured agent/system interface。`inkos tui` のランタイムは削除され、現在は 1 リリース周期だけ Studio と構造化インターフェースへの移行案内を表示する退場 stub のみです。
 
 **英語ネイティブ小説執筆に対応！** — 10種類の英語ジャンルプロファイルを内蔵し、専用のペーシングルール、疲労語リスト、監査ディメンションを搭載。`--lang en` を設定するだけですぐに始められます。
 
@@ -45,7 +45,15 @@ clawhub install inkos          # ClawHub からインストール
 
 npm でインストール済み、またはリポジトリをクローン済みの場合、`skills/SKILL.md` が含まれているため、ClawHub の別途インストールなしで 🦞 が直接読み取れます。
 
-インストール後、Claw は InkOS のアトミックコマンドとコントロールサーフェス操作（`plan chapter`/`compose chapter`/`draft`/`audit`/`revise`/`write next`）を `exec` 経由で呼び出し可能で、`--json` 出力による構造化された意思決定が可能です。推奨フロー：`author_intent.md` または `current_focus.md` を更新し、`plan` / `compose` を実行、その後 `draft` または完全パイプラインの `write next` を選択。[ClawHub](https://clawhub.ai) で `inkos` を検索して閲覧することもできます。
+インストール後、Claw はまず構造化インタラクション入口を優先してください：
+
+```bash
+inkos interact --json --message "continue the current book, but keep the pacing tighter"
+```
+
+これは OpenClaw、外部エージェント、自動化向けの structured agent/system interface です。返される JSON には routed request、assistant response、updated interaction session、execution state、pending decision、recent events が含まれます。
+
+`plan chapter` / `compose chapter` / `draft` / `audit` / `revise` / `write next` のようなアトミックコマンドも引き続き利用できますが、より低レベルなツールとして位置づけられます。人間ユーザーは通常 `inkos` で Studio に入り、[ClawHub](https://clawhub.ai) では `inkos` を検索して確認できます。
 
 ### 設定
 
@@ -109,12 +117,12 @@ inkos config show-models        # 現在のルーティングを表示
 
 **統一インタラクションカーネル + TUIダッシュボード + Studioアシスタント**
 
-- **共有インタラクションランタイム**：TUI、Studio、`inkos interact`、OpenClaw Skillが単一のNL理解+実行カーネルを共有、15以上のインテント（執筆、修正、書き直し、リネーム、エクスポート、書籍切り替え等）をサポート
-- **Ink TUIダッシュボード**：`inkos` でフルスクリーンの対話型ダッシュボード（Ink + React）を起動、会話型創作、スラッシュコマンド自動補完、テーマアニメーション、i18nバイリンガル対応
-- **Studioアシスタントパネル**：右側AIアシスタントパネルが共有インタラクションカーネルに接続——自然言語で書籍操作（リネーム、執筆、監査、エクスポート）、リアルタイム実行状態表示
-- **会話型ブック作成**：自然言語の対話で書籍設定を段階的にブレスト、ドラフト完成後ワンクリック作成
+- **共有インタラクションランタイム**：TUI、Studio、`inkos interact --json`、OpenClaw Skill が同じ自然言語理解 + 実行ランタイムを共有し、15 以上のインテント（執筆、修正、書き直し、リネーム、エクスポート、書籍切り替え等）をサポート
+- **Ink TUIダッシュボード**：v1.2 のリリース時点では、`inkos` でフルスクリーンの対話型ダッシュボード（Ink + React）を起動し、会話型創作、スラッシュコマンド自動補完、テーマアニメーション、i18n バイリンガル対応を提供
+- **Studioアシスタントパネル**：右側AIアシスタントパネルが共有インタラクションランタイムに接続し、自然言語で書籍操作（リネーム、執筆、監査、エクスポート）を実行、状態もリアルタイム表示
+- **会話型ブック作成**：自然言語の対話で書籍設定を段階的にブレストし、ドラフト完成後に作成
 - **全書エンティティリネーム**：`rename 林烬 to 張三` または `/rename 林烬 => 張三`——全章+真実ファイルを一括スキャン＆置換
-- **`inkos interact`**：共有インタラクションJSONエンドポイント、OpenClaw/外部Agentから直接呼び出し可能
+- **`inkos interact --json`**：共有インタラクション JSON エンドポイントとして、OpenClaw / 外部 Agent 連携で利用可能
 - **Thinkingモデル温度クランプ**：kimi-k2.5等のthinkingモデルをtemperature=1に自動固定、per-call温度オーバーライドと互換
 - **Studio不要コード削除**：未使用のshadcnコンポーネントと依存関係を削除、-2800行
 
