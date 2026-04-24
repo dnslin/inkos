@@ -61,7 +61,7 @@ function isSequenceLevelCategory(category: string): boolean {
 }
 
 function normalizeFoundationReviewMaxAttempts(value: number | undefined): number | undefined {
-  if (!Number.isInteger(value) || value < 1 || value > 20) {
+  if (value === undefined || !Number.isInteger(value) || value < 1 || value > 20) {
     return undefined;
   }
   return value;
