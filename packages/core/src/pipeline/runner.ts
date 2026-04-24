@@ -54,9 +54,17 @@ const SEQUENCE_LEVEL_CATEGORIES = new Set([
   "Opening Pattern Repetition", "开头同构",
   "Ending Pattern Repetition", "结尾同构",
 ]);
+const FOUNDATION_REVIEW_DEFAULT_MAX_ATTEMPTS = 3;
 
 function isSequenceLevelCategory(category: string): boolean {
   return SEQUENCE_LEVEL_CATEGORIES.has(category);
+}
+
+function normalizeFoundationReviewMaxAttempts(value: number | undefined): number | undefined {
+  if (!Number.isInteger(value) || value < 1 || value > 20) {
+    return undefined;
+  }
+  return value;
 }
 
 export interface PipelineConfig {
@@ -264,7 +272,9 @@ export class PipelineRunner {
     readonly stageLanguage: LengthLanguage;
     readonly maxAttempts?: number;
   }): Promise<ArchitectOutput> {
-    const maxAttempts = params.maxAttempts ?? this.config.foundationReview?.maxAttempts ?? 3;
+    const maxAttempts = normalizeFoundationReviewMaxAttempts(params.maxAttempts)
+      ?? normalizeFoundationReviewMaxAttempts(this.config.foundationReview?.maxAttempts)
+      ?? FOUNDATION_REVIEW_DEFAULT_MAX_ATTEMPTS;
     let foundation = await params.generate();
 
     for (let attempt = 0; attempt < maxAttempts - 1; attempt++) {

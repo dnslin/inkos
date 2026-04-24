@@ -638,6 +638,156 @@ describe("PipelineRunner", () => {
     }
   });
 
+  it("falls back to the default attempt budget when config max attempts is out of range", async () => {
+    const root = await mkdtemp(join(tmpdir(), "inkos-foundation-review-invalid-config-"));
+    const runner = new PipelineRunner({
+      client: {
+        provider: "openai",
+        apiFormat: "chat",
+        stream: false,
+        defaults: {
+          temperature: 0.7,
+          maxTokens: 4096,
+          thinkingBudget: 0, maxTokensCap: null,
+        },
+      } as ConstructorParameters<typeof PipelineRunner>[0]["client"],
+      model: "test-model",
+      projectRoot: root,
+      foundationReview: { maxAttempts: 21 as never },
+    });
+    const reviewer = new FoundationReviewerAgent({
+      client: {
+        provider: "openai",
+        apiFormat: "chat",
+        stream: false,
+        defaults: {
+          temperature: 0.7,
+          maxTokens: 4096,
+          thinkingBudget: 0, maxTokensCap: null,
+        },
+      } as ConstructorParameters<typeof PipelineRunner>[0]["client"],
+      model: "test-model",
+      projectRoot: root,
+      bookId: "demo-book",
+    });
+    const foundation = {
+      storyBible: "# Story Bible",
+      volumeOutline: "# Volume Outline",
+      bookRules: "---\nversion: \"1.0\"\n---\n\n# Book Rules",
+      currentState: "# Current State",
+      pendingHooks: "# Pending Hooks",
+    };
+    const generate = vi.fn(async (_reviewFeedback?: string) => foundation);
+    const reviewMock = vi.mocked(FoundationReviewerAgent.prototype.review);
+
+    reviewMock.mockReset();
+    reviewMock.mockResolvedValue({
+      passed: false,
+      totalScore: 70,
+      dimensions: [],
+      overallFeedback: "未通过",
+    });
+
+    try {
+      await (runner as unknown as {
+        generateAndReviewFoundation: (params: {
+          readonly generate: (reviewFeedback?: string) => Promise<typeof foundation>;
+          readonly reviewer: FoundationReviewerAgent;
+          readonly mode: "original";
+          readonly language: "zh";
+          readonly stageLanguage: "zh";
+        }) => Promise<typeof foundation>;
+      }).generateAndReviewFoundation({
+        generate,
+        reviewer,
+        mode: "original",
+        language: "zh",
+        stageLanguage: "zh",
+      });
+
+      expect(generate).toHaveBeenCalledTimes(3);
+      expect(reviewMock).toHaveBeenCalledTimes(3);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to the project config when explicit max attempts is out of range", async () => {
+    const root = await mkdtemp(join(tmpdir(), "inkos-foundation-review-invalid-override-"));
+    const runner = new PipelineRunner({
+      client: {
+        provider: "openai",
+        apiFormat: "chat",
+        stream: false,
+        defaults: {
+          temperature: 0.7,
+          maxTokens: 4096,
+          thinkingBudget: 0, maxTokensCap: null,
+        },
+      } as ConstructorParameters<typeof PipelineRunner>[0]["client"],
+      model: "test-model",
+      projectRoot: root,
+      foundationReview: { maxAttempts: 2 },
+    });
+    const reviewer = new FoundationReviewerAgent({
+      client: {
+        provider: "openai",
+        apiFormat: "chat",
+        stream: false,
+        defaults: {
+          temperature: 0.7,
+          maxTokens: 4096,
+          thinkingBudget: 0, maxTokensCap: null,
+        },
+      } as ConstructorParameters<typeof PipelineRunner>[0]["client"],
+      model: "test-model",
+      projectRoot: root,
+      bookId: "demo-book",
+    });
+    const foundation = {
+      storyBible: "# Story Bible",
+      volumeOutline: "# Volume Outline",
+      bookRules: "---\nversion: \"1.0\"\n---\n\n# Book Rules",
+      currentState: "# Current State",
+      pendingHooks: "# Pending Hooks",
+    };
+    const generate = vi.fn(async (_reviewFeedback?: string) => foundation);
+    const reviewMock = vi.mocked(FoundationReviewerAgent.prototype.review);
+
+    reviewMock.mockReset();
+    reviewMock.mockResolvedValue({
+      passed: false,
+      totalScore: 70,
+      dimensions: [],
+      overallFeedback: "未通过",
+    });
+
+    try {
+      await (runner as unknown as {
+        generateAndReviewFoundation: (params: {
+          readonly generate: (reviewFeedback?: string) => Promise<typeof foundation>;
+          readonly reviewer: FoundationReviewerAgent;
+          readonly mode: "original";
+          readonly language: "zh";
+          readonly stageLanguage: "zh";
+          readonly maxAttempts: number;
+        }) => Promise<typeof foundation>;
+      }).generateAndReviewFoundation({
+        generate,
+        reviewer,
+        mode: "original",
+        language: "zh",
+        stageLanguage: "zh",
+        maxAttempts: 21,
+      });
+
+      expect(generate).toHaveBeenCalledTimes(2);
+      expect(reviewMock).toHaveBeenCalledTimes(2);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it("bootstraps missing control documents for legacy books before writing", async () => {
     const { root, runner, bookId } = await createRunnerFixture();
 
