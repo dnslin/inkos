@@ -345,6 +345,21 @@ describe("ProjectConfigSchema", () => {
     expect(result.notify).toEqual([]);
   });
 
+  it("defaults foundation review config", () => {
+    const result = ProjectConfigSchema.parse(validProject);
+    expect(result.foundationReview.maxAttempts).toBe(3);
+  });
+
+  it("accepts custom foundation review attempts", () => {
+    const result = ProjectConfigSchema.parse({
+      ...validProject,
+      foundationReview: {
+        maxAttempts: 6,
+      },
+    });
+    expect(result.foundationReview.maxAttempts).toBe(6);
+  });
+
   it("defaults input governance mode to v2", () => {
     const result = ProjectConfigSchema.parse(validProject);
     expect(result.inputGovernanceMode).toBe("v2");

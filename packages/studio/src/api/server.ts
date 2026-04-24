@@ -598,6 +598,7 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string) {
       projectRoot: root,
       defaultLLMConfig: currentConfig.llm,
       modelOverrides: currentConfig.modelOverrides,
+      foundationReview: currentConfig.foundationReview,
       notifyChannels: currentConfig.notify,
       logger,
       onStreamProgress: (progress) => {

@@ -217,6 +217,9 @@ const projectConfig = {
     cooldownAfterChapterMs: 0,
     maxChaptersPerDay: 50,
   },
+  foundationReview: {
+    maxAttempts: 3,
+  },
   modelOverrides: {},
   notify: [],
 } as const;
@@ -606,6 +609,10 @@ describe("createStudioServer daemon lifecycle", () => {
         model: "fresh-model",
         baseUrl: "https://fresh.example.com/v1",
       },
+      foundationReview: {
+        ...cloneProjectConfig().foundationReview,
+        maxAttempts: 7,
+      },
     };
     loadProjectConfigMock.mockResolvedValue(freshConfig);
 
@@ -623,6 +630,9 @@ describe("createStudioServer daemon lifecycle", () => {
       defaultLLMConfig: expect.objectContaining({
         model: "fresh-model",
         baseUrl: "https://fresh.example.com/v1",
+      }),
+      foundationReview: expect.objectContaining({
+        maxAttempts: freshConfig.foundationReview.maxAttempts,
       }),
     });
   });

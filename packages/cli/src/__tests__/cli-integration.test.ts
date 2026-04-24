@@ -215,6 +215,36 @@ describe("CLI integration", () => {
       }).toThrow();
     });
 
+    it("sets foundation review max attempts", async () => {
+      const initialized = await stat(join(projectDir, "inkos.json")).then(() => true).catch(() => false);
+      if (!initialized) run(["init"]);
+
+      const output = run(["config", "set", "foundationReview.maxAttempts", "6"]);
+      expect(output).toContain("Set foundationReview.maxAttempts = 6");
+
+      const raw = await readFile(join(projectDir, "inkos.json"), "utf-8");
+      const config = JSON.parse(raw);
+      expect(config.foundationReview.maxAttempts).toBe(6);
+    });
+
+    it("rejects foundation review max attempts below one", async () => {
+      const initialized = await stat(join(projectDir, "inkos.json")).then(() => true).catch(() => false);
+      if (!initialized) run(["init"]);
+
+      const { exitCode, stderr } = runStderr(["config", "set", "foundationReview.maxAttempts", "0"]);
+      expect(exitCode).not.toBe(0);
+      expect(stderr).toContain("foundationReview.maxAttempts must be an integer between 1 and 20");
+    });
+
+    it("rejects non-integer foundation review max attempts", async () => {
+      const initialized = await stat(join(projectDir, "inkos.json")).then(() => true).catch(() => false);
+      if (!initialized) run(["init"]);
+
+      const { exitCode, stderr } = runStderr(["config", "set", "foundationReview.maxAttempts", "1.5"]);
+      expect(exitCode).not.toBe(0);
+      expect(stderr).toContain("foundationReview.maxAttempts must be an integer between 1 and 20");
+    });
+
     it("sets input governance mode", async () => {
       const output = run(["config", "set", "inputGovernanceMode", "v2"]);
       expect(output).toContain("Set inputGovernanceMode = v2");

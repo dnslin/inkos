@@ -29,6 +29,7 @@ configCommand
         "daemon.maxConcurrentBooks", "daemon.chaptersPerCycle",
         "daemon.retryDelayMs", "daemon.cooldownAfterChapterMs",
         "daemon.maxChaptersPerDay",
+        "foundationReview.maxAttempts",
       ]);
       // Allow any key under llm.extra.* (passthrough to API)
       if (!KNOWN_KEYS.has(key) && !key.startsWith("llm.extra.")) {
@@ -65,8 +66,14 @@ configCommand
         target = target[k];
       }
       const finalKey = keys[keys.length - 1]!;
-      // Auto-coerce types: numbers and booleans shouldn't be stored as strings
-      if (/^\d+(\.\d+)?$/.test(value)) {
+      if (key === "foundationReview.maxAttempts") {
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
+          logError("foundationReview.maxAttempts must be an integer between 1 and 20");
+          process.exit(1);
+        }
+        target[finalKey] = parsed;
+      } else if (/^\d+(\.\d+)?$/.test(value)) {
         target[finalKey] = parseFloat(value);
       } else if (value === "true") {
         target[finalKey] = true;
