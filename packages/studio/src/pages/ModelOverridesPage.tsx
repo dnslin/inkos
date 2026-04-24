@@ -167,13 +167,13 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
           <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
+        <div role="table" className="rounded-xl border border-border overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[2fr_3fr_1.5fr_1fr] bg-muted/60 text-xs uppercase tracking-wider font-medium text-muted-foreground">
-            <div className="px-5 py-3">Agent</div>
-            <div className="px-5 py-3">{t("overrides.model")}</div>
-            <div className="px-5 py-3">{t("overrides.status")}</div>
-            <div className="px-5 py-3" />
+          <div role="row" className="grid grid-cols-[2fr_3fr_1.5fr_1fr] bg-muted/60 text-xs uppercase tracking-wider font-medium text-muted-foreground">
+            <div role="columnheader" className="px-5 py-3">Agent</div>
+            <div role="columnheader" className="px-5 py-3">{t("overrides.model")}</div>
+            <div role="columnheader" className="px-5 py-3">{t("overrides.status")}</div>
+            <div role="columnheader" className="px-5 py-3" />
           </div>
 
           {agentList.map((agent) => {
@@ -186,17 +186,17 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
             return (
               <div key={agent} className={isOverridden ? "bg-primary/[0.03]" : ""}>
                 {/* Info row */}
-                <div className="grid grid-cols-[2fr_3fr_1.5fr_1fr] border-t border-border items-center">
-                  <div className="px-5 py-3.5">
+                <div role="row" className="grid grid-cols-[2fr_3fr_1.5fr_1fr] border-t border-border items-center">
+                  <div role="cell" className="px-5 py-3.5">
                     <div className="font-medium text-sm">{agent}</div>
                     <div className="text-xs text-muted-foreground">{meta.label}</div>
                   </div>
-                  <div className="px-5 py-3.5">
+                  <div role="cell" className="px-5 py-3.5">
                     <span className={`font-mono text-xs ${isOverridden ? "text-primary" : "text-muted-foreground"}`}>
                       {isOverridden ? overrideDisplay(o) : t("overrides.usingDefault")}
                     </span>
                   </div>
-                  <div className="px-5 py-3.5">
+                  <div role="cell" className="px-5 py-3.5">
                     <span
                       className={
                         isOverridden
@@ -207,7 +207,7 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
                       {isOverridden ? t("overrides.overridden") : t("overrides.default")}
                     </span>
                   </div>
-                  <div className="px-5 py-3.5 text-right">
+                  <div role="cell" className="px-5 py-3.5 text-right">
                     <button
                       onClick={() => (isEditing ? cancelEdit() : startEdit(agent))}
                       className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -223,11 +223,12 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
                     <div className="grid grid-cols-2 gap-4">
                       {/* Model */}
                       <div>
-                        <label className="block text-xs font-medium mb-1.5">
+                        <label htmlFor={`${agent}-model`} className="block text-xs font-medium mb-1.5">
                           {t("overrides.model")}
                         </label>
                         <div className="flex gap-2">
                           <input
+                            id={`${agent}-model`}
                             value={draftModel}
                             onChange={(e) => setDraftModel(e.target.value)}
                             placeholder="claude-sonnet-4-20250514"
@@ -238,10 +239,11 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
 
                       {/* Provider */}
                       <div>
-                        <label className="block text-xs font-medium mb-1.5">
+                        <label htmlFor={`${agent}-provider`} className="block text-xs font-medium mb-1.5">
                           {t("overrides.provider")}
                         </label>
                         <select
+                          id={`${agent}-provider`}
                           value={draftProvider}
                           onChange={(e) => setDraftProvider(e.target.value)}
                           className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-muted-foreground"
@@ -261,10 +263,11 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
                       </summary>
                       <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
                         <div>
-                          <label className="block text-xs font-medium mb-1.5">
+                          <label htmlFor={`${agent}-baseUrl`} className="block text-xs font-medium mb-1.5">
                             {t("overrides.baseUrl")}
                           </label>
                           <input
+                            id={`${agent}-baseUrl`}
                             value={draftBaseUrl}
                             onChange={(e) => setDraftBaseUrl(e.target.value)}
                             placeholder="https://api.anthropic.com"
@@ -272,10 +275,11 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium mb-1.5">
+                          <label htmlFor={`${agent}-apiKeyEnv`} className="block text-xs font-medium mb-1.5">
                             {t("overrides.apiKeyEnv")}
                           </label>
                           <input
+                            id={`${agent}-apiKeyEnv`}
                             value={draftApiKeyEnv}
                             onChange={(e) => setDraftApiKeyEnv(e.target.value)}
                             placeholder="WRITER_API_KEY"
@@ -283,8 +287,9 @@ export function ModelOverridesPage({ nav, t }: { nav: Nav; t: TFunction }) {
                           />
                         </div>
                         <div>
-                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <label htmlFor={`${agent}-stream`} className="flex items-center gap-2 text-sm cursor-pointer">
                             <input
+                              id={`${agent}-stream`}
                               type="checkbox"
                               checked={draftStream}
                               onChange={(e) => setDraftStream(e.target.checked)}

@@ -214,7 +214,6 @@ const strings = {
   "overrides.removeOverride": { zh: "移除覆盖", en: "Remove Override" },
   "overrides.advanced": { zh: "高级选项", en: "Advanced" },
   "overrides.status": { zh: "状态", en: "Status" },
-  "overrides.customModel": { zh: "自定义", en: "Custom" },
   "overrides.model": { zh: "模型", en: "Model" },
   "overrides.provider": { zh: "提供方", en: "Provider" },
   "overrides.baseUrl": { zh: "基础 URL", en: "Base URL" },
