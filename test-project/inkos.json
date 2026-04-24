@@ -5,7 +5,20 @@
     "provider": "openai",
     "baseUrl": "https://api.openai.com/v1",
     "model": "gpt-4o",
-    "stream": false
+    "stream": false,
+    "services": [
+      {
+        "service": "custom",
+        "name": "KUKU",
+        "baseUrl": "https://cpa.kuku.me/v1",
+        "temperature": 1,
+        "maxTokens": 128000,
+        "apiFormat": "chat",
+        "stream": true
+      }
+    ],
+    "defaultModel": "gpt-5.4",
+    "service": "custom:KUKU"
   },
   "notify": [],
   "daemon": {
