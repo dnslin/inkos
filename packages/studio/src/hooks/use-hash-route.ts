@@ -15,6 +15,7 @@ export type HashRoute =
   | { page: "style" }
   | { page: "import" }
   | { page: "radar" }
+  | { page: "model-overrides" }
   | { page: "doctor" };
 
 function parseHash(hash: string): HashRoute {

@@ -35,6 +35,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Route,
 } from "lucide-react";
 
 interface BookSummary {
@@ -56,6 +57,7 @@ interface Nav {
   toStyle: () => void;
   toImport: () => void;
   toRadar: () => void;
+  toModelOverrides: () => void;
   toDoctor: () => void;
 }
 
@@ -332,6 +334,12 @@ export function Sidebar({ nav, activePage, sse, t }: {
               icon={<Terminal size={16} />}
               active={activePage === "logs"}
               onClick={nav.toLogs}
+            />
+            <SidebarItem
+              label={t("nav.modelOverrides")}
+              icon={<Route size={16} />}
+              active={activePage === "model-overrides"}
+              onClick={nav.toModelOverrides}
             />
           </div>
         </div>
