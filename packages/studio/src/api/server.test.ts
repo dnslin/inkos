@@ -30,6 +30,7 @@ const appendBookSessionMessageMock = vi.fn();
 const renameBookSessionMock = vi.fn();
 const deleteBookSessionMock = vi.fn();
 const migrateBookSessionMock = vi.fn();
+const readRoleCardsMock = vi.fn();
 const resolveServiceModelMock = vi.fn();
 const loadSecretsMock = vi.fn();
 const saveSecretsMock = vi.fn();
@@ -189,6 +190,7 @@ vi.mock("@actalk/inkos-core", () => {
     saveSecrets: saveSecretsMock,
     getServiceApiKey: getServiceApiKeyMock,
     listModelsForService: listModelsForServiceMock,
+    readRoleCards: readRoleCardsMock,
     GLOBAL_ENV_PATH: join(tmpdir(), "inkos-global.env"),
   };
 });
@@ -350,6 +352,8 @@ describe("createStudioServer daemon lifecycle", () => {
     renameBookSessionMock.mockReset();
     deleteBookSessionMock.mockReset();
     migrateBookSessionMock.mockReset();
+    readRoleCardsMock.mockReset();
+    readRoleCardsMock.mockResolvedValue([]);
     resolveServiceModelMock.mockReset();
     loadSecretsMock.mockReset();
     saveSecretsMock.mockReset();
@@ -470,6 +474,25 @@ describe("createStudioServer daemon lifecycle", () => {
     await expect(readFile(join(storyDir, "current_focus.md"), "utf-8")).resolves.toBe(
       "# Current Focus\n\nPull focus back to the harbor trail.\n",
     );
+  });
+
+  it("returns role cards grouped by tier from the roles directory", async () => {
+    readRoleCardsMock.mockResolvedValue([
+      { tier: "major", name: "沈砚", content: "## 核心标签\n证据洁癖。\n" },
+      { tier: "minor", name: "岑秀", content: "## 核心标签\n法医。\n" },
+    ]);
+
+    const { createStudioServer } = await import("./server.js");
+    const app = createStudioServer(cloneProjectConfig() as never, root);
+
+    const response = await app.request("http://localhost/api/v1/books/demo-book/roles");
+
+    expect(response.status).toBe(200);
+    expect(readRoleCardsMock).toHaveBeenCalledWith(join(root, "books", "demo-book"));
+    await expect(response.json()).resolves.toEqual({
+      major: [{ tier: "major", name: "沈砚", content: "## 核心标签\n证据洁癖。\n" }],
+      minor: [{ tier: "minor", name: "岑秀", content: "## 核心标签\n法医。\n" }],
+    });
   });
 
   it("reflects project edits immediately without restarting the studio server", async () => {

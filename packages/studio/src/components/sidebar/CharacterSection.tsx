@@ -8,11 +8,28 @@ import { cn } from "../../lib/utils";
 interface CharacterInfo {
   name: string;
   fields: Record<string, string>;
+  content?: string;
+}
+
+interface RoleCard {
+  readonly tier: "major" | "minor";
+  readonly name: string;
+  readonly content: string;
+}
+
+interface RoleCardsResponse {
+  readonly major: RoleCard[];
+  readonly minor: RoleCard[];
+}
+
+interface CharacterGroup {
+  readonly key: "major" | "minor" | "legacy";
+  readonly title: string;
+  readonly characters: CharacterInfo[];
 }
 
 function parseCharacterMatrix(md: string): CharacterInfo[] {
   const characters: CharacterInfo[] = [];
-  // Split by ## headings (level 2 only)
   const sections = md.split(/^## /m).slice(1);
   for (const section of sections) {
     const lines = section.split("\n");
@@ -28,6 +45,24 @@ function parseCharacterMatrix(md: string): CharacterInfo[] {
     characters.push({ name, fields });
   }
   return characters;
+}
+
+function roleCardsToCharacters(cards: RoleCard[]): CharacterInfo[] {
+  return cards.map((card) => ({ name: card.name, fields: {}, content: card.content }));
+}
+
+export function buildCharacterGroups(roles: RoleCardsResponse | null, legacyContent: string | null): CharacterGroup[] {
+  const groups: CharacterGroup[] = [];
+  if (roles && roles.major.length > 0) {
+    groups.push({ key: "major", title: "主要角色", characters: roleCardsToCharacters(roles.major) });
+  }
+  if (roles && roles.minor.length > 0) {
+    groups.push({ key: "minor", title: "次要角色", characters: roleCardsToCharacters(roles.minor) });
+  }
+  if (groups.length > 0) return groups;
+
+  const legacyCharacters = legacyContent ? parseCharacterMatrix(legacyContent) : [];
+  return legacyCharacters.length > 0 ? [{ key: "legacy", title: "角色", characters: legacyCharacters }] : [];
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -76,6 +111,7 @@ function CharacterCard({ char }: { readonly char: CharacterInfo }) {
       </button>
       {expanded && (
         <div className="px-2.5 pb-2.5 space-y-1">
+          {char.content && <div className="text-xs text-muted-foreground whitespace-pre-wrap">{char.content}</div>}
           {tags && (
             <p className="text-xs text-muted-foreground"><span className="text-muted-foreground/60">标签</span> {tags}</p>
           )}
@@ -100,28 +136,36 @@ interface CharacterSectionProps {
 }
 
 export function CharacterSection({ bookId }: CharacterSectionProps) {
-  const [characters, setCharacters] = useState<CharacterInfo[]>([]);
+  const [groups, setGroups] = useState<CharacterGroup[]>([]);
   const bookDataVersion = useChatStore((s) => s.bookDataVersion);
 
   useEffect(() => {
-    fetchJson<{ content: string | null }>(`/books/${bookId}/truth/character_matrix.md`)
-      .then((data) => {
-        if (data.content) {
-          setCharacters(parseCharacterMatrix(data.content));
-        } else {
-          setCharacters([]);
-        }
-      })
-      .catch(() => setCharacters([]));
+    let cancelled = false;
+    Promise.all([
+      fetchJson<RoleCardsResponse>(`/books/${bookId}/roles`).catch(() => null),
+      fetchJson<{ content: string | null }>(`/books/${bookId}/truth/character_matrix.md`).catch(() => ({ content: null })),
+    ]).then(([roles, legacy]) => {
+      if (!cancelled) {
+        setGroups(buildCharacterGroups(roles, legacy.content));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [bookId, bookDataVersion]);
 
-  if (characters.length === 0) return null;
+  if (groups.length === 0) return null;
 
   return (
     <SidebarCard title="角色">
-      <div className="space-y-1.5">
-        {characters.map((char) => (
-          <CharacterCard key={char.name} char={char} />
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <div key={group.key} className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground px-1">{group.title}</p>
+            {group.characters.map((char) => (
+              <CharacterCard key={`${group.key}:${char.name}`} char={char} />
+            ))}
+          </div>
         ))}
       </div>
     </SidebarCard>

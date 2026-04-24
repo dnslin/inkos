@@ -32,6 +32,7 @@ import {
   saveSecrets,
   getServiceApiKey,
   listModelsForService,
+  readRoleCards,
   chatCompletion,
   buildExportArtifact,
   GLOBAL_ENV_PATH,
@@ -796,6 +797,16 @@ export function createStudioServer(initialConfig: ProjectConfig, root: string) {
     } catch {
       return c.json({ file, content: null });
     }
+  });
+
+  app.get("/api/v1/books/:id/roles", async (c) => {
+    const id = c.req.param("id");
+    const bookDir = state.bookDir(id);
+    const cards = await readRoleCards(bookDir);
+    return c.json({
+      major: cards.filter((card) => card.tier === "major"),
+      minor: cards.filter((card) => card.tier === "minor"),
+    });
   });
 
   // --- Analytics ---
