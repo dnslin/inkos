@@ -3,6 +3,10 @@
 **Generated:** 2026-04-24T08:48:38+08:00
 **Commit:** 899cda0
 
+# 必需遵守
+
+你必须使用中文和我进行交流,并且日志和注释也使用中文,你必须称呼我为dnslin
+
 ## OVERVIEW
 
 InkOS 是一个 `pnpm` workspace，分成共享领域引擎（`packages/core`）、Commander CLI（`packages/cli`）和本地 Web 工作台（`packages/studio`）。
@@ -20,17 +24,17 @@ InkOS 是一个 `pnpm` workspace，分成共享领域引擎（`packages/core`）
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-| --- | --- | --- |
-| 理解共享引擎公开面 | `packages/core/src/index.ts` | 导出面决定跨包可见能力 |
-| 追踪章节主编排 | `packages/core/src/pipeline/runner.ts` | `write/draft/audit/revise` 主路径 |
-| 追踪自然语言交互流 | `packages/core/src/interaction/project-control.ts` | CLI `interact` 与 Studio 共用 |
-| 查看项目/书籍持久化布局 | `packages/core/src/state/manager.ts` | on-disk layout 与 lock 的源头 |
-| 排查配置优先级 | `packages/core/src/utils/config-loader.ts` | `~/.inkos/.env`、项目 `.env`、`inkos.json` |
-| 查看 CLI 入口面 | `packages/cli/src/program.ts` | 裸 `inkos` 默认启动 Studio |
-| 查看项目初始化布局 | `packages/cli/src/project-bootstrap.ts` | 生成 `inkos.json`、`.env`、`books/`、`radar/` |
-| 查看 Studio API 接线 | `packages/studio/src/api/server.ts` | Hono 路由、SSE、配置/模型发现 |
-| 查看 Studio 客户端入口 | `packages/studio/src/main.tsx` | React bootstrap |
+| Task                    | Location                                           | Notes                                         |
+| ----------------------- | -------------------------------------------------- | --------------------------------------------- |
+| 理解共享引擎公开面      | `packages/core/src/index.ts`                       | 导出面决定跨包可见能力                        |
+| 追踪章节主编排          | `packages/core/src/pipeline/runner.ts`             | `write/draft/audit/revise` 主路径             |
+| 追踪自然语言交互流      | `packages/core/src/interaction/project-control.ts` | CLI `interact` 与 Studio 共用                 |
+| 查看项目/书籍持久化布局 | `packages/core/src/state/manager.ts`               | on-disk layout 与 lock 的源头                 |
+| 排查配置优先级          | `packages/core/src/utils/config-loader.ts`         | `~/.inkos/.env`、项目 `.env`、`inkos.json`    |
+| 查看 CLI 入口面         | `packages/cli/src/program.ts`                      | 裸 `inkos` 默认启动 Studio                    |
+| 查看项目初始化布局      | `packages/cli/src/project-bootstrap.ts`            | 生成 `inkos.json`、`.env`、`books/`、`radar/` |
+| 查看 Studio API 接线    | `packages/studio/src/api/server.ts`                | Hono 路由、SSE、配置/模型发现                 |
+| 查看 Studio 客户端入口  | `packages/studio/src/main.tsx`                     | React bootstrap                               |
 
 ## CONVENTIONS
 
@@ -60,3 +64,4 @@ InkOS 是一个 `pnpm` workspace，分成共享领域引擎（`packages/core`）
 - `pnpm --filter @actalk/inkos-core test`
 - `pnpm --filter @actalk/inkos test`
 - `pnpm --filter @actalk/inkos-studio test`
+
