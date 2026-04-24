@@ -16,6 +16,7 @@ import { StyleManager } from "./pages/StyleManager";
 import { ImportManager } from "./pages/ImportManager";
 import { RadarView } from "./pages/RadarView";
 import { DoctorView } from "./pages/DoctorView";
+import { ModelOverridesPage } from "./pages/ModelOverridesPage";
 import { LanguageSelector } from "./pages/LanguageSelector";
 import { BookSidebar, BookSidebarToggle } from "./components/chat/BookSidebar";
 import { useSSE } from "./hooks/use-sse";
@@ -75,6 +76,7 @@ export function App() {
     toStyle: () => setRoute({ page: "style" }),
     toImport: () => setRoute({ page: "import" }),
     toRadar: () => setRoute({ page: "radar" }),
+    toModelOverrides: () => setRoute({ page: "model-overrides" }),
     toDoctor: () => setRoute({ page: "doctor" }),
   };
 
@@ -236,6 +238,9 @@ export function App() {
             <div className="max-w-4xl mx-auto px-6 py-12 md:px-12 lg:py-16 fade-in">
               <RadarView nav={nav} theme={theme} t={t} />
             </div>
+          )}
+          {route.page === "model-overrides" && (
+            <ModelOverridesPage nav={nav} t={t} />
           )}
           {route.page === "doctor" && (
             <div className="max-w-4xl mx-auto px-6 py-12 md:px-12 lg:py-16 fade-in">
