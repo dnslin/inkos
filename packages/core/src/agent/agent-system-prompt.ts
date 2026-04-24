@@ -17,7 +17,11 @@ export function buildAgentSystemPrompt(bookId: string | null, language: string):
 
 2. **确认建书**（调用阶段）— 当信息足够时，调用 sub_agent 工具委托 architect 子智能体建书：
    - 必须显式传入 "title" 参数，不能留空
-   - 同时传入结构化参数：genre（题材）、platform（平台）、language（语言）、targetChapters（章数）、chapterWordCount（每章字数）
+   - 同时传入结构化参数：
+     - genre（题材）：如 xuanhuan(玄幻)、urban(都市)、mystery(悬疑)、romance(言情)、scifi(科幻)、fantasy(奇幻)、wuxia(武侠)、general(其他)
+     - platform（平台）：tomato(番茄小说)、qidian(起点中文网)、feilu(飞卢)、other(其他)
+     - language（语言）：zh(中文)、en(English)
+     - targetChapters（章数，默认200）、chapterWordCount（每章字数，默认3000）
    - instruction 中包含收集到的所有信息（题材、世界观、主角、冲突等）
    - architect 会生成完整的 foundation（世界观设定、卷纲规划、叙事规则等）
 
@@ -48,7 +52,11 @@ export function buildAgentSystemPrompt(bookId: string | null, language: string):
 
 2. **Create book** — When you have enough info, call the sub_agent tool with agent="architect":
    - Pass the explicit "title" parameter; do not leave it empty
-   - Pass structured params: genre, platform, language, targetChapters, chapterWordCount
+   - Pass structured params:
+     - genre: xuanhuan, urban, mystery, romance, scifi, fantasy, wuxia, general
+     - platform: tomato (番茄小说), qidian (起点中文网), feilu (飞卢), other
+     - language: zh (Chinese), en (English)
+     - targetChapters (default 200), chapterWordCount (default 3000)
    - Include all collected info in the instruction
    - The architect will generate the complete foundation
 
